@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Megaphone, PanelLeftClose, PanelLeftOpen, Kanban, ClipboardCheck, Menu, X, MessageCircle, FileText, PhoneCall, Sun, Moon, Bell, Shield, Activity, GitCompareArrows } from 'lucide-react';
+import { BarChart3, Megaphone, PanelLeftClose, PanelLeftOpen, Kanban, ClipboardCheck, Menu, X, MessageCircle, FileText, PhoneCall, Sun, Moon, Bell, Shield, GitCompareArrows } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { ClientFeatures } from '@/hooks/useClient';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -28,7 +28,6 @@ const allNavItems = [
   { title: 'Auditoria', url: '/auditoria', icon: ClipboardCheck, featureKey: 'auditoria' as const },
   { title: 'Ao Vivo', url: '/ao-vivo', icon: MessageCircle, featureKey: 'ao_vivo' as const },
   { title: 'Contratos', url: '/contratos', icon: FileText, featureKey: 'contratos' as const },
-  { title: 'Evolução', url: '/evolucao', icon: Activity, featureKey: 'evolucao' as const },
   { title: 'Comparar', url: '/comparar', icon: GitCompareArrows, featureKey: 'comparar' as const },
   { title: 'Follow-up', url: '/follow-up', icon: PhoneCall, featureKey: 'follow_up' as const },
   { title: 'Central de Notificações', url: '/notificacoes', icon: Bell, featureKey: 'notificacoes' as const },

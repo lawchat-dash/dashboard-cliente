@@ -1,4 +1,4 @@
-import { Columns2, X, LayoutDashboard, Megaphone, KanbanSquare, ClipboardCheck, Radio, FileText, PhoneCall, Bell, Eye, Check, Activity, GitCompareArrows } from 'lucide-react';
+import { Columns2, X, LayoutDashboard, Megaphone, KanbanSquare, ClipboardCheck, Radio, FileText, PhoneCall, Bell, Eye, Check, GitCompareArrows } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ClientFeatures } from '@/hooks/useClient';
 import { useState } from 'react';
@@ -10,7 +10,6 @@ export const SPLIT_PAGES = [
   { key: 'auditoria', label: 'Auditoria', icon: ClipboardCheck, featureKey: 'auditoria' },
   { key: 'ao-vivo', label: 'Ao Vivo', icon: Radio, featureKey: 'ao_vivo' },
   { key: 'contratos', label: 'Contratos', icon: FileText, featureKey: 'contratos' },
-  { key: 'evolucao', label: 'Evolução', icon: Activity, featureKey: 'evolucao' },
   { key: 'comparar', label: 'Comparar', icon: GitCompareArrows, featureKey: 'comparar' },
   { key: 'follow-up', label: 'Follow-up', icon: PhoneCall, featureKey: 'follow_up' },
   { key: 'notificacoes', label: 'Notificações', icon: Bell, featureKey: 'notificacoes' },

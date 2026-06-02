@@ -13,7 +13,6 @@ import FiltersBar from '@/components/FiltersBar';
 import KPICards from '@/components/KPICards';
 import StageMetrics from '@/components/StageMetrics';
 import AverageTimeCards from '@/components/AverageTimeCards';
-import VolumePanel from '@/components/VolumePanel';
 import SalesFunnel from '@/components/SalesFunnel';
 import LeadsTable from '@/components/LeadsTable';
 import TimelineChart from '@/components/TimelineChart';
@@ -158,8 +157,8 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
               <SalesGoal cards={filteredCards} />
             </div>
             <TimelineChart cards={filteredCards} />
-            <div className="grid items-start gap-5 lg:grid-cols-3">
-              <VolumePanel cards={filteredCards} />
+            <ChatEvolutionPage cards={filteredCards} sessions={sessions} />
+            <div className="grid items-start gap-5 lg:grid-cols-2">
               <LeadSourceChart sessions={sessions} cards={filteredCards} />
               <BrazilStateMap sessions={sessions} cards={filteredCards} />
             </div>
@@ -176,8 +175,6 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
         return <LiveChatPage clientId={clientId} />;
       case 'contratos':
         return <ContractsPage cards={filteredCards} sessions={sessions} />;
-      case 'evolucao':
-        return <ChatEvolutionPage cards={filteredCards} sessions={sessions} />;
       case 'comparar':
         return <PeriodComparison cards={filteredCards} sessions={sessions} />;
       case 'follow-up':
@@ -262,8 +259,8 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
                 <SalesGoal cards={filteredCards} />
               </div>
               <TimelineChart cards={filteredCards} />
-              <div className="grid items-start gap-5 lg:grid-cols-3">
-                <VolumePanel cards={filteredCards} />
+              <ChatEvolutionPage cards={filteredCards} sessions={sessions} />
+              <div className="grid items-start gap-5 lg:grid-cols-2">
                 <LeadSourceChart sessions={sessions} cards={filteredCards} />
                 <BrazilStateMap sessions={sessions} cards={filteredCards} />
               </div>
@@ -295,9 +292,6 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
         )}
         {(!features || features.contratos !== false) && (
           <Route path="/contratos" element={<ContractsPage cards={filteredCards} sessions={sessions} />} />
-        )}
-        {(!features || features.evolucao !== false) && (
-          <Route path="/evolucao" element={<ChatEvolutionPage cards={filteredCards} sessions={sessions} />} />
         )}
         {(!features || features.comparar !== false) && (
           <Route path="/comparar" element={<PeriodComparison cards={filteredCards} sessions={sessions} />} />
