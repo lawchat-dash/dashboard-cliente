@@ -39,10 +39,8 @@ const STORAGE_KEY = 'sidebar-collapsed';
 const Sidebar = ({ features, basePath = '', clientId, lastUpdated, currentUserName, currentUserProfile, splitPages = [], onSplitConfirm, onSplitClose }: SidebarProps) => {
   const isMobile = useIsMobile();
   const { theme, toggleTheme } = useTheme();
-  const [collapsed, setCollapsed] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved !== null ? JSON.parse(saved) : true;
-  });
+  // Sidebar sempre começa EXPANDIDO (sem botão de recolher no desktop).
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -171,15 +169,6 @@ const Sidebar = ({ features, basePath = '', clientId, lastUpdated, currentUserNa
             alt="LawChat"
             className="h-10 object-contain"
           />
-        )}
-        {!collapsed && (
-          <button
-            onClick={() => setCollapsed(true)}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            title="Recolher"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
         )}
       </div>
 

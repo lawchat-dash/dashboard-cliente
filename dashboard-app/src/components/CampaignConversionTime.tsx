@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, Session } from '@/api/helena';
 import { useClassify } from '@/contexts/StepMappingsContext';
-import { Timer } from 'lucide-react';
+import { Timer, ChevronDown, ChevronUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface CampaignConversionTimeProps {
@@ -25,8 +25,11 @@ function formatDuration(ms: number): string {
   return `${days}d ${remainingHours}h`;
 }
 
+const VISIBLE_LIMIT = 6; // mostra as N campanhas mais rápidas; resto fica atrás do "Ver mais"
+
 const CampaignConversionTime = ({ cards, sessions }: CampaignConversionTimeProps) => {
   const { classify } = useClassify();
+  const [showAll, setShowAll] = useState(false);
   const data = useMemo(() => {
     const cardMap = new Map(cards.filter(c => !c.archived).map(c => [c.id, c]));
     const campTimes = new Map<string, number[]>();
@@ -59,6 +62,8 @@ const CampaignConversionTime = ({ cards, sessions }: CampaignConversionTimeProps
       .sort((a, b) => a.avgMs - b.avgMs);
   }, [cards, sessions, classify]);
 
+  const visible = showAll ? data : data.slice(0, VISIBLE_LIMIT);
+
   if (data.length === 0) {
     return (
       <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-[0_1px_3px_rgba(15,23,42,0.05)]">
@@ -79,8 +84,8 @@ const CampaignConversionTime = ({ cards, sessions }: CampaignConversionTimeProps
       </div>
       <p className="mb-4 text-[11px] text-muted-foreground">Do primeiro contato ao contrato assinado (campanhas mais rápidas primeiro)</p>
 
-      <ResponsiveContainer width="100%" height={Math.max(200, data.length * 48)}>
-        <BarChart data={data} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={Math.max(200, visible.length * 48)}>
+        <BarChart data={visible} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
           <XAxis type="number" hide />
           <YAxis
             type="category"
@@ -102,7 +107,7 @@ const CampaignConversionTime = ({ cards, sessions }: CampaignConversionTimeProps
             }}
           />
           <Bar dataKey="avgDays" radius={[0, 6, 6, 0]} barSize={24}>
-            {data.map((_, i) => (
+            {visible.map((_, i) => (
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Bar>
@@ -111,7 +116,7 @@ const CampaignConversionTime = ({ cards, sessions }: CampaignConversionTimeProps
 
       {/* Ranking list below */}
       <div className="mt-3 space-y-1">
-        {data.map((d, i) => (
+        {visible.map((d, i) => (
           <div key={d.fullName} className="flex items-center justify-between text-xs px-1">
             <span className="text-muted-foreground">
               {i + 1}. <span className="text-foreground font-medium">{d.fullName}</span>
@@ -120,6 +125,17 @@ const CampaignConversionTime = ({ cards, sessions }: CampaignConversionTimeProps
           </div>
         ))}
       </div>
+
+      {data.length > VISIBLE_LIMIT && (
+        <button
+          onClick={() => setShowAll(v => !v)}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-background py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          {showAll
+            ? (<><ChevronUp className="h-3.5 w-3.5" /> Ver menos</>)
+            : (<><ChevronDown className="h-3.5 w-3.5" /> Ver mais {data.length - VISIBLE_LIMIT} campanha{data.length - VISIBLE_LIMIT > 1 ? 's' : ''}</>)}
+        </button>
+      )}
     </div>
   );
 };

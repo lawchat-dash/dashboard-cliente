@@ -15,7 +15,6 @@ import StageMetrics from '@/components/StageMetrics';
 import AverageTimeCards from '@/components/AverageTimeCards';
 import SalesFunnel from '@/components/SalesFunnel';
 import LeadsTable from '@/components/LeadsTable';
-import TimelineChart from '@/components/TimelineChart';
 import LeadSourceChart from '@/components/LeadSourceChart';
 import SalesGoal from '@/components/SalesGoal';
 import BestAdsRanking from '@/components/BestAdsRanking';
@@ -156,7 +155,6 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
               <AverageTimeCards cards={filteredCards} />
               <SalesGoal cards={filteredCards} />
             </div>
-            <TimelineChart cards={filteredCards} />
             <ChatEvolutionPage cards={filteredCards} sessions={sessions} />
             <div className="grid items-start gap-5 lg:grid-cols-2">
               <LeadSourceChart sessions={sessions} cards={filteredCards} />
@@ -258,7 +256,6 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
                 <AverageTimeCards cards={filteredCards} />
                 <SalesGoal cards={filteredCards} />
               </div>
-              <TimelineChart cards={filteredCards} />
               <ChatEvolutionPage cards={filteredCards} sessions={sessions} />
               <div className="grid items-start gap-5 lg:grid-cols-2">
                 <LeadSourceChart sessions={sessions} cards={filteredCards} />

@@ -35,28 +35,32 @@ const SalesFunnel = ({ cards, activeSteps = [] }: SalesFunnelProps) => {
     const total = nonArchived.length;
     const count = visibleSteps.length;
 
+    // Quantos cards estão ATUALMENTE em cada etapa (estados excludentes).
+    const currentCounts = visibleSteps.map((step) => nonArchived.filter((c) => classify(c) === step).length);
+    // FUNIL CUMULATIVO: cada etapa conta quem alcançou ELA ou qualquer etapa
+    // posterior (as etapas estão em ordem de progressão). Assim o funil decresce
+    // de forma monótona e a conversão etapa→etapa fica entre 0 e 100% (real).
+    const cumulative = currentCounts.map((_, i) => currentCounts.slice(i).reduce((a, b) => a + b, 0));
+
     const result = visibleSteps.map((step, i) => {
-      const stepCount = nonArchived.filter((c) => classify(c) === step).length;
+      const stepCount = cumulative[i];
       // Largura decrescente: 100% no topo até ~42% na base
       const widthPct = count <= 1 ? 100 : 100 - (i * (58 / (count - 1)));
       const meta = STAGE_META[step] || STAGE_META['SDR'];
+      const prevCount = i > 0 ? cumulative[i - 1] : null;
+      // Conversão real: % que avançou da etapa anterior para esta.
+      const dropRate = prevCount && prevCount > 0 ? (stepCount / prevCount) * 100 : null;
       return {
         step,
         count: stepCount,
         widthPct,
         pctOfTotal: total > 0 ? (stepCount / total) * 100 : 0,
+        dropRate,
         ...meta,
       };
     });
 
-    // Calcula taxa de conversão de uma etapa pra próxima
-    const withConv = result.map((s, i) => {
-      const prev = i > 0 ? result[i - 1] : null;
-      const dropRate = prev && prev.count > 0 ? (s.count / prev.count) * 100 : null;
-      return { ...s, dropRate };
-    });
-
-    return { stages: withConv, totalLeads: total };
+    return { stages: result, totalLeads: total };
   }, [cards, activeSteps, classify]);
 
   return (

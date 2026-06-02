@@ -163,13 +163,12 @@ export function useFilters(cards: Card[], sessions: Session[], stepMappings?: St
 
   const cardIdsForLeadSource = useMemo(() => {
     if (!filters.leadSource) return null;
-    const seenCards = new Set<string>();
     const ids = new Set<string>();
+    // Inclui o card se QUALQUER sessão dele bater com a origem selecionada.
+    // (Antes travava na 1ª sessão qualificada → cards com 2 origens podiam sumir.)
     sessions.forEach(s => {
-      if (!s.cardId || seenCards.has(s.cardId)) return;
-      // Only consider sessions with utmSource AND (utmSourceId or utmCampaign)
+      if (!s.cardId) return;
       if (s.utmSource && (s.utmSourceId || s.utmCampaign)) {
-        seenCards.add(s.cardId);
         if (classifySource(s.utmSource) === filters.leadSource) {
           ids.add(s.cardId);
         }
@@ -192,6 +191,10 @@ export function useFilters(cards: Card[], sessions: Session[], stepMappings?: St
     // O filtro de número só vale quando o usuário escolhe um número na UI.
     const selected = filters.channelNumbers && filters.channelNumbers.length > 0 ? new Set(filters.channelNumbers) : null;
     if (!selected) return null;
+    // "Selecionar todos": se todos os números disponíveis estão marcados, equivale a
+    // SEM filtro (mostra tudo, inclusive cards sem sessão/humanId). Antes, marcar todos
+    // escondia quem não tinha sessão sincronizada → parecia bug ("some gente").
+    if (uniqueChannelNumbers.length > 0 && uniqueChannelNumbers.every((n) => selected.has(n))) return null;
     const ids = new Set<string>();
     sessions.forEach((s) => {
       if (!s.cardId) return;
@@ -200,7 +203,7 @@ export function useFilters(cards: Card[], sessions: Session[], stepMappings?: St
       ids.add(s.cardId);
     });
     return ids;
-  }, [sessions, filters.channelNumbers]);
+  }, [sessions, filters.channelNumbers, uniqueChannelNumbers]);
 
   // Campaign filter: build set of card IDs that belong to the selected campaign
   const cardIdsForCampaign = useMemo(() => {
@@ -260,7 +263,10 @@ export function useFilters(cards: Card[], sessions: Session[], stepMappings?: St
         const cardSessions = sessionsByCardId.get(card.id);
         let responsibleName: string;
         if (cardSessions && cardSessions.length > 0) {
-          const agentNames = cardSessions
+          // Ordena por data da sessão → "primeiro atendimento" determinístico
+          // (antes pegava [0] na ordem bruta do fetch → variava entre recargas).
+          const agentNames = [...cardSessions]
+            .sort((a, b) => new Date(a.sessionCreatedAt || 0).getTime() - new Date(b.sessionCreatedAt || 0).getTime())
             .map((s) => s.agentName)
             .filter(Boolean) as string[];
           responsibleName = agentNames.length > 0 ? agentNames[0] : (card.responsibleUser?.name || 'Não atribuído');

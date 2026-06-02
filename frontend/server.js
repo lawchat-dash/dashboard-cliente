@@ -598,9 +598,10 @@ async function upsertSessions(rows) {
     FROM jsonb_populate_recordset(NULL::helena_sessions, $1::jsonb)
     ON CONFLICT (id) DO UPDATE SET
       helena_company_id=EXCLUDED.helena_company_id,
-      contact_id=EXCLUDED.contact_id,
       -- COALESCE: o bulk (v2 list) NÃO traz contactDetails/channelDetails — então
-      -- preservamos dados ricos (telefone, tags, card_id) que já temos de syncs by-id.
+      -- preservamos dados ricos (contato, telefone, tags, card_id) de syncs by-id.
+      -- (contact_id sem COALESCE zerava o vínculo contato↔sessão que alimenta os enriquecimentos.)
+      contact_id=COALESCE(EXCLUDED.contact_id, helena_sessions.contact_id),
       card_id=COALESCE(EXCLUDED.card_id, helena_sessions.card_id),
       status=EXCLUDED.status,
       agent_name=COALESCE(EXCLUDED.agent_name, helena_sessions.agent_name),
@@ -1659,8 +1660,9 @@ const server = http.createServer(async (req, res) => {
             // Sync horário (rápido) em background — não aguarda
             (async () => {
               let logId = null;
+              let lockAcquired = false;
               try {
-                const lockAcquired = await acquireDbLock(clientId, "running_hourly", 1);
+                lockAcquired = await acquireDbLock(clientId, "running_hourly", 1);
                 if (!lockAcquired) return;
                 logId = await startSyncLog(clientId, "on_mount");
                 await syncCards(client, { mode: "hourly" }, () => {});
@@ -1673,7 +1675,8 @@ const server = http.createServer(async (req, res) => {
                 // Fecha o log mesmo no erro (senão fica "running" pra sempre)
                 if (logId) { try { await endSyncLog(logId, { status: "error", error: e.message }); } catch {} }
               } finally {
-                await releaseDbLock(clientId);
+                // Só libera SE adquiriu — senão destruiria o lock de outro sync em andamento.
+                if (lockAcquired) await releaseDbLock(clientId);
               }
             })();
             bgSyncTriggered = true;
@@ -2165,6 +2168,10 @@ async function processOneClient(c, syncType) {
       () => {}
     );
     result.sessions = sessRes?.counts?.sessions || 0;
+    // Preenche channel_phone/channel_name das sessões que vieram sem número,
+    // usando o channelId (sempre presente) + de-para das sessões já enriquecidas.
+    // Sem isso, o filtro de Número só "enxergava" ~5% das sessões.
+    await backfillChannelPhone(c.id);
     console.log(`  ✓ ${c.name}: cards=${result.cards} sessions=${result.sessions} contacts=${result.contacts}`);
   } catch (e) {
     result.status = "error";
@@ -2179,6 +2186,40 @@ async function processOneClient(c, syncType) {
       cards: result.cards, sessions: result.sessions, contacts: result.contacts,
       error: result.error,
     });
+  }
+}
+
+// Self-healing: preenche channel_phone/channel_name onde está NULL a partir do
+// channelId (presente em session_detail_full de toda sessão) + de-para das sessões
+// já enriquecidas do mesmo cliente. Roda após cada sync → mantém o filtro de Número
+// funcionando mesmo que a Helena não devolva o humanId em todas as sessões.
+async function backfillChannelPhone(clientId) {
+  try {
+    const r = await pool.query(
+      `WITH mapa AS (
+         SELECT DISTINCT ON (channel_id) channel_id, channel_phone, channel_name
+         FROM (
+           SELECT COALESCE(channel_id, session_detail_full->>'channelId') AS channel_id,
+                  channel_phone, channel_name, count(*) n
+           FROM helena_sessions
+           WHERE client_id = $1 AND channel_phone IS NOT NULL
+           GROUP BY 1, 2, 3
+         ) g
+         WHERE channel_id IS NOT NULL
+         ORDER BY channel_id, n DESC
+       )
+       UPDATE helena_sessions s
+          SET channel_phone = m.channel_phone,
+              channel_name  = COALESCE(s.channel_name, m.channel_name)
+         FROM mapa m
+        WHERE s.client_id = $1
+          AND COALESCE(s.channel_id, s.session_detail_full->>'channelId') = m.channel_id
+          AND s.channel_phone IS NULL`,
+      [clientId]
+    );
+    if (r.rowCount > 0) console.log(`  📞 channel_phone backfill: ${r.rowCount} sessão(ões)`);
+  } catch (e) {
+    console.warn("backfillChannelPhone falhou:", e.message);
   }
 }
 

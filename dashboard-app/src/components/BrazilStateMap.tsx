@@ -182,7 +182,9 @@ const BrazilStateMap = ({ sessions, cards }: BrazilStateMapProps) => {
       if (state) counts.set(state, (counts.get(state) || 0) + 1);
     });
     return counts;
-  }, [cards, cardPhoneMap]);
+    // classify nas deps: senão "Contratos por Estado" congela em 0 quando os
+    // mapeamentos de etapa chegam DEPOIS dos cards (carregam async, separados).
+  }, [cards, cardPhoneMap, classify]);
 
   const activeCounts = mode === 'leads' ? leadsByState : contratosByState;
   const total = useMemo(() => Array.from(activeCounts.values()).reduce((a, b) => a + b, 0), [activeCounts]);

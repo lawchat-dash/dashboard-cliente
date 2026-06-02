@@ -30,7 +30,9 @@ interface FiltersBarProps {
 }
 
 function toDateStr(d: Date) {
-  return d.toISOString().slice(0, 10);
+  // Componentes LOCAIS (não toISOString, que converte p/ UTC e pode trocar o dia).
+  // Mantém consistência com a comparação local em useFilters.
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 type QuickPeriod = 'today' | 'yesterday' | 'today_yesterday' | '7d' | '14d' | '28d' | '30d' | 'this_week' | 'last_week' | 'month' | 'last_month' | 'all';
@@ -255,7 +257,10 @@ const ChannelMultiSelect = ({ values, options, onChange, inputClass, fullWidth }
     onChange(values.includes(n) ? values.filter(v => v !== n) : [...values, n]);
   };
 
-  const label = values.length === 0
+  const allSelected = options.length > 0 && options.every(o => values.includes(o));
+  // Marcar todos = mostrar tudo (a lógica trata "todos" como sem filtro), então o
+  // rótulo fica "Todos números" tanto vazio quanto com tudo marcado — honesto.
+  const label = (values.length === 0 || allSelected)
     ? 'Todos números'
     : values.length === 1
       ? values[0]
@@ -265,13 +270,29 @@ const ChannelMultiSelect = ({ values, options, onChange, inputClass, fullWidth }
     <div className={cn("relative", fullWidth && "w-full")} ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={cn(inputClass, "flex items-center gap-1.5 cursor-pointer", fullWidth && "w-full justify-between", values.length > 0 && "border-primary/50")}
+        className={cn(inputClass, "flex items-center gap-1.5 cursor-pointer", fullWidth && "w-full justify-between", values.length > 0 && !allSelected && "border-primary/50")}
       >
         <span className="truncate">{label}</span>
         <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
       </button>
       {open && (
         <div className="absolute top-full left-0 z-50 mt-1 w-64 rounded-lg border border-border bg-popover p-2 shadow-lg">
+          {options.length > 0 && (
+            <div className="mb-1 flex items-center justify-between gap-2 px-1 pb-1.5 border-b border-border">
+              <button
+                onClick={() => onChange(options.slice())}
+                className="text-[11px] font-semibold text-primary hover:underline"
+              >
+                Selecionar todos
+              </button>
+              <button
+                onClick={() => onChange([])}
+                className="text-[11px] font-medium text-muted-foreground hover:text-foreground hover:underline"
+              >
+                Limpar
+              </button>
+            </div>
+          )}
           <div className="space-y-0.5 max-h-64 overflow-y-auto">
             <button
               onClick={() => onChange([])}
@@ -868,29 +889,37 @@ const FiltersBar = (props: FiltersBarProps) => {
                 </div>
 
                 <div className="border-t border-border p-3 space-y-2">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Intervalo personalizado</span>
-                  <div className="flex gap-4">
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground">Data início</span>
-                      <Calendar
-                        mode="single"
-                        selected={strToDate(filters.dateStart)}
-                        onSelect={(d) => setFilters(f => ({ ...f, dateStart: dateToStr(d) }))}
-                        className="p-2 pointer-events-auto rounded-md border border-border"
-                        locale={ptBR}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground">Data fim</span>
-                      <Calendar
-                        mode="single"
-                        selected={strToDate(filters.dateEnd)}
-                        onSelect={(d) => setFilters(f => ({ ...f, dateEnd: dateToStr(d) }))}
-                        className="p-2 pointer-events-auto rounded-md border border-border"
-                        locale={ptBR}
-                      />
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Intervalo personalizado</span>
+                    {(filters.dateStart || filters.dateEnd) && (
+                      <button
+                        onClick={() => setFilters(f => ({ ...f, dateStart: '', dateEnd: '' }))}
+                        className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                      >
+                        Limpar
+                      </button>
+                    )}
                   </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Clique no <strong className="text-foreground">dia inicial</strong> e depois no <strong className="text-foreground">dia final</strong>.
+                  </p>
+                  {/* Um calendário só, em modo intervalo (range): seleciona início→fim de
+                      forma nativa, sem dois calendários separados que confundiam. */}
+                  <Calendar
+                    mode="range"
+                    numberOfMonths={2}
+                    selected={strToDate(filters.dateStart) || strToDate(filters.dateEnd)
+                      ? { from: strToDate(filters.dateStart), to: strToDate(filters.dateEnd) }
+                      : undefined}
+                    onSelect={(range) => setFilters(f => ({
+                      ...f,
+                      dateStart: dateToStr(range?.from),
+                      dateEnd: dateToStr(range?.to ?? range?.from),
+                    }))}
+                    defaultMonth={strToDate(filters.dateStart) || new Date()}
+                    className="p-2 pointer-events-auto rounded-md border border-border"
+                    locale={ptBR}
+                  />
                   {isCustomDate && (
                     <div className="text-xs text-primary font-medium pt-1">
                       {filters.dateStart && format(strToDate(filters.dateStart)!, 'dd/MM/yyyy')}

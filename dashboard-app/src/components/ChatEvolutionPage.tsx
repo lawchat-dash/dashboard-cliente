@@ -321,6 +321,24 @@ const ChatEvolutionPage = ({ cards }: ChatEvolutionPageProps) => {
               {chart.xticks.map((t, i) => (
                 <text key={i} x={chart.x(t.i)} y={chart.H - 8} textAnchor="middle" className="fill-muted-foreground" style={{ fontSize: 9 }}>{fmtShort(t.t)}</text>
               ))}
+
+              {/* faixas de hover invisíveis (uma por dia) → acerto certeiro do mouse,
+                  bem melhor que calcular pela posição X (que falhava nas bordas). */}
+              {data.series.map((_, i) => {
+                const step = (chart.W - chart.padL - chart.padR) / Math.max(1, data.series.length - 1);
+                return (
+                  <rect
+                    key={`hit-${i}`}
+                    x={chart.x(i) - step / 2}
+                    y={chart.padT}
+                    width={step}
+                    height={chart.H - chart.padT - chart.padB}
+                    fill="transparent"
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoverIdx(i)}
+                  />
+                );
+              })}
             </svg>
 
             {/* tooltip premium — segue o ponto, centralizado e com clamp (sem pulo) */}

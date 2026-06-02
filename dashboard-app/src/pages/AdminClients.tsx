@@ -62,7 +62,14 @@ const AdminClients = () => {
   const [clientLevel, setClientLevel] = useState<number>(1);
   const [panels, setPanels] = useState<PanelInput[]>([{ panel_id: '', panel_name: '', sync_interval_minutes: 10 }]);
   const [stepMappings, setStepMappings] = useState<StepMappingInput[]>([]);
-  const [features, setFeatures] = useState<ClientFeatures>({ dashboard: true, pipeline: true, campanhas: true, auditoria: true, ia: false, ao_vivo: true, contratos: true, follow_up: true });
+  // Default COMPLETO (todas as features renderizadas). Sem isso, features novas ficam
+  // undefined → switch aparece off, mas a rota trata undefined como LIGADA (divergência).
+  const DEFAULT_FEATURES: ClientFeatures = {
+    dashboard: true, pipeline: true, campanhas: true, auditoria: true,
+    ao_vivo: true, contratos: true, comparar: true, follow_up: true,
+    notificacoes: true, supervisao: true, ia: false, templates_api: false,
+  };
+  const [features, setFeatures] = useState<ClientFeatures>({ ...DEFAULT_FEATURES });
   const [allowedNumbers, setAllowedNumbers] = useState<string[]>([]);
   const [availableNumbers, setAvailableNumbers] = useState<string[]>([]);
   const [loadingNumbers, setLoadingNumbers] = useState(false);
@@ -119,7 +126,7 @@ const AdminClients = () => {
   const openNew = () => {
     setEditing(null); setName(''); setSlug(''); setHelenaCompanyId(''); setApiKey(''); setClientLevel(1);
     setPanels([{ panel_id: '', panel_name: '', sync_interval_minutes: 10 }]);
-    setStepMappings([]); setFeatures({ dashboard: true, pipeline: true, campanhas: true, auditoria: true, ao_vivo: true, contratos: true, follow_up: true });
+    setStepMappings([]); setFeatures({ ...DEFAULT_FEATURES });
     setAllowedNumbers([]); setAvailableNumbers([]);
     setDialogOpen(true);
   };
@@ -128,7 +135,9 @@ const AdminClients = () => {
     setEditing(client); setName(client.name); setSlug(client.slug);
     setHelenaCompanyId(client.helena_company_id || '');
     setApiKey(client.helena_api_key); setClientLevel(client.client_level || 1);
-    setFeatures(client.features || { dashboard: true, pipeline: true, campanhas: true, auditoria: true, ia: false, ao_vivo: true, contratos: true, follow_up: true });
+    // Merge: garante que TODA feature tenha valor definido (as que faltam no banco
+    // herdam o default), pra o switch refletir o comportamento real da rota.
+    setFeatures({ ...DEFAULT_FEATURES, ...(client.features || {}) });
     setAllowedNumbers(client.allowed_numbers || []);
     setAvailableNumbers([]);
     const { data } = await supabase.from('client_panels').select('*').eq('client_id', client.id);
@@ -143,17 +152,18 @@ const AdminClients = () => {
   const loadAvailableNumbers = async (clientId: string) => {
     setLoadingNumbers(true);
     try {
+      // Usa a coluna dedicada channel_phone (preenchida p/ ~97% das sessões via
+      // backfill por channelId). Antes lia session_detail_full.channelDetails.humanId,
+      // que só existe em pouquíssimas linhas → a lista vinha quase vazia.
       const { data } = await supabase
         .from('helena_sessions')
-        .select('session_detail_full')
+        .select('channel_phone')
         .eq('client_id', clientId)
-        .limit(5000);
+        .not('channel_phone', 'is', null)
+        .limit(10000);
       const set = new Set<string>();
       (data || []).forEach((row: any) => {
-        try {
-          const hid = row?.session_detail_full?.channelDetails?.humanId;
-          if (hid) set.add(String(hid));
-        } catch {}
+        if (row?.channel_phone) set.add(String(row.channel_phone));
       });
       setAvailableNumbers(Array.from(set).sort());
     } catch (e) { console.error(e); }
@@ -441,7 +451,6 @@ const AdminClients = () => {
                   { key: 'auditoria' as const, label: '📋 Auditoria' },
                   { key: 'ao_vivo' as const, label: '📡 Ao Vivo' },
                   { key: 'contratos' as const, label: '📄 Contratos' },
-                  { key: 'evolucao' as const, label: '📈 Evolução' },
                   { key: 'comparar' as const, label: '🔀 Comparar' },
                   { key: 'follow_up' as const, label: '📞 Follow-up' },
                   { key: 'notificacoes' as const, label: '🔔 Central de Notificações' },

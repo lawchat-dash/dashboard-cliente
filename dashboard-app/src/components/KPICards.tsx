@@ -34,7 +34,9 @@ const KPICards = ({ cards, sessions }: KPICardsProps) => {
     const total = nonArchived.length;
     const closedCount = nonArchived.filter(c => classify(c) === 'CONTRATO FECHADO').length;
     const sdrCount = nonArchived.filter(c => classify(c) === 'SDR').length;
-    const desqualificadoCount = nonArchived.filter(c => { const s = classify(c); return s === 'DESQUALIFICADO' || s === 'NAO ASSINOU'; }).length;
+    // Só DESQUALIFICADO sai do denominador. "NÃO ASSINOU" já fez contrato (avançou
+    // muito além do SDR), então DEVE contar como "avançou do SDR" — senão a taxa infla.
+    const desqualificadoCount = nonArchived.filter(c => classify(c) === 'DESQUALIFICADO').length;
     const generalConversion = total > 0 ? (closedCount / total) * 100 : 0;
     const advancedFromSdr = total - sdrCount - desqualificadoCount;
     const efficiencyRate = advancedFromSdr > 0 ? (closedCount / advancedFromSdr) * 100 : 0;
