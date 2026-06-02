@@ -1,0 +1,1 @@
+UPDATE helena_cards SET client_id = 'a1b2c3d4-0002-0002-0002-000000000002' WHERE panel_id = 'e6e830ea-b37a-4243-b656-eba8fa8ad4cd' AND client_id IS NULL;

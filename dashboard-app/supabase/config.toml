@@ -1,0 +1,13 @@
+project_id = "nrntxdcvrflgufdskdam"
+
+[functions.sync-sessions]
+verify_jwt = false
+
+[functions.sales-agent]
+verify_jwt = false
+
+[functions.helena-webhook]
+verify_jwt = false
+
+[functions.sync-all-clients]
+verify_jwt = false

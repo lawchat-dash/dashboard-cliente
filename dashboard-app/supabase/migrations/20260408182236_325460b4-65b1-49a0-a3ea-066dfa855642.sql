@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_ai_followup_events_upsert_key;

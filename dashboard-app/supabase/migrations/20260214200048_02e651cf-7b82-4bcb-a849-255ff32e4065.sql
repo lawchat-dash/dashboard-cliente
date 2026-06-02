@@ -1,0 +1,1 @@
+ALTER TABLE helena_cards ADD COLUMN IF NOT EXISTS tags_name jsonb DEFAULT '[]'::jsonb;

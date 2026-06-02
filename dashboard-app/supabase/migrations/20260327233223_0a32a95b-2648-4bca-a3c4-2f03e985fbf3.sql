@@ -1,0 +1,2 @@
+ALTER TABLE public.helena_cards ADD COLUMN IF NOT EXISTS contract_note JSONB DEFAULT NULL;
+ALTER TABLE public.helena_cards ADD COLUMN IF NOT EXISTS contract_parsed JSONB DEFAULT NULL;

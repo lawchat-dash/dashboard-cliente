@@ -1,0 +1,1 @@
+ALTER TABLE public.helena_cards ALTER COLUMN position TYPE DOUBLE PRECISION;

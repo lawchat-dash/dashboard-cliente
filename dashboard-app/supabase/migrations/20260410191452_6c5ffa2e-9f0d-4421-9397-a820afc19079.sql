@@ -1,0 +1,1 @@
+ALTER TABLE public.notificativo_leads ADD COLUMN external_status text DEFAULT NULL;

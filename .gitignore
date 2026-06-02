@@ -1,0 +1,32 @@
+# === Dependências ===
+**/node_modules/
+
+# === Build ===
+dashboard-app/dist/
+dist-ssr/
+
+# === Segredos ===
+# server: senha do banco — NUNCA commitar
+frontend/.env
+**/.env.local
+**/.env.*.local
+# OBS: dashboard-app/.env é versionado de propósito (só chaves PÚBLICAS do Supabase,
+# necessárias no build do Vite; protegidas por RLS).
+
+# === Material antigo / local ===
+_arquivo/
+.claude/
+
+# === Logs e dumps ===
+*.log
+*.har
+
+# === Lockfiles alternativos (usamos npm/package-lock) ===
+dashboard-app/bun.lock
+dashboard-app/bun.lockb
+
+# === SO / editores ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

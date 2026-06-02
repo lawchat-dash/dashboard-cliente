@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LawChat Admin · Sync Control</title>
+<style>
+  :root {
+    --bg: #f7f9fc;
+    --panel: #ffffff;
+    --panel-2: #f1f5f9;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-soft: #94a3b8;
+    --primary: #10b981;
+    --primary-dark: #059669;
+    --primary-light: #d1fae5;
+    --blue: #3b82f6;
+    --blue-light: #dbeafe;
+    --red: #ef4444;
+    --red-light: #fee2e2;
+    --yellow: #f59e0b;
+    --yellow-light: #fef3c7;
+    --purple: #8b5cf6;
+    --purple-light: #ede9fe;
+    --orange: #f97316;
+    --orange-light: #ffedd5;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.04);
+    --shadow: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  }
+  body.dark {
+    --bg: #0b0f17; --panel: #131a26; --panel-2: #0f1520; --border: #1f2937;
+    --border-strong: #374151; --text: #e5e7eb; --text-muted: #94a3b8; --text-soft: #6b7280;
+    --primary-light: rgba(16,185,129,.15); --blue-light: rgba(59,130,246,.15);
+    --red-light: rgba(239,68,68,.15); --yellow-light: rgba(245,158,11,.15);
+    --purple-light: rgba(139,92,246,.15); --orange-light: rgba(249,115,22,.15);
+    --gray-50: #0f1520; --gray-100: #131a26; --gray-200: #1f2937; --gray-300: #374151;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-soft); }
+
+  /* === LAYOUT === */
+  .app { display: flex; min-height: 100vh; }
+  aside.sidebar {
+    width: 240px; background: var(--panel); border-right: 1px solid var(--border);
+    padding: 20px 14px; display: flex; flex-direction: column; flex-shrink: 0;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px; margin-bottom: 24px; }
+  .brand-logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #34d399, #10b981); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); flex-shrink: 0; }
+  .brand-logo svg { display: block; }
+  .modal.wide { max-width: 880px; }
+  .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .feature-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 7px; transition: background 0.15s; }
+  .feature-row:hover { background: var(--panel-2); }
+  .feature-row .name { font-size: 13px; flex: 1; }
+  .modal-section { padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--border); }
+  .modal-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+  .modal-section-head .title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+  .modal-section-head .hint { font-size: 11px; color: var(--text-muted); }
+  .url-preview { font-size: 11px; color: var(--blue); font-family: ui-monospace,monospace; margin-top: 5px; word-break: break-all; }
+  .url-preview:hover { text-decoration: underline; cursor: pointer; }
+  .input-with-eye { position: relative; }
+  .input-with-eye input { padding-right: 36px; }
+  .input-with-eye .eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); box-shadow: none; }
+  .input-with-eye .eye:hover { color: var(--text); background: transparent; }
+  .number-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; margin: 3px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 99px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .number-chip:hover { border-color: var(--primary); }
+  .number-chip.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary-dark); font-weight: 600; }
+  body.dark .number-chip.selected { color: var(--primary); }
+  .number-chip input[type="checkbox"] { display: none; }
+  .panel-row-rich { display: grid; grid-template-columns: 2fr 1.5fr 60px auto; gap: 6px; margin-bottom: 6px; }
+  .step-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-bottom: 6px; }
+  .step-row select { width: 100%; }
+  .brand-info .name { font-weight: 700; font-size: 15px; line-height: 1.1; }
+  .brand-info .sub { font-size: 11px; color: var(--text-muted); }
+  .nav-section-label { font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.6px; padding: 14px 8px 4px; font-weight: 600; }
+  .nav-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 11px; border-radius: 8px;
+    color: var(--text); text-decoration: none; font-size: 13px;
+    cursor: pointer; transition: all 0.15s; margin-bottom: 2px;
+    border: 1px solid transparent;
+  }
+  .nav-link:hover { background: var(--panel-2); }
+  .nav-link.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+  body.dark .nav-link.active { color: var(--primary); }
+  .nav-link .ico { font-size: 15px; width: 18px; text-align: center; }
+  .nav-link .badge { margin-left: auto; background: var(--gray-200); color: var(--text-muted); font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  .nav-link.active .badge { background: var(--primary); color: white; }
+  .spacer { flex: 1; }
+  .sidebar-foot { padding-top: 12px; border-top: 1px solid var(--border); margin-top: 12px; }
+
+  main.content { flex: 1; padding: 24px 32px; overflow-x: auto; max-width: 100%; }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  .page-head h1 { margin: 0 0 4px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .page-head .subtitle { color: var(--text-muted); font-size: 13px; }
+  .page-head .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* === COMPONENTS === */
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s;
+  }
+  .card:hover { box-shadow: var(--shadow); }
+  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .card-title { font-size: 14px; font-weight: 600; }
+  .card-sub { font-size: 11px; color: var(--text-muted); }
+
+  button {
+    background: var(--primary); color: white; border: none;
+    padding: 9px 16px; border-radius: 8px; font-size: 13px;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 7px;
+    box-shadow: var(--shadow-sm);
+  }
+  button:hover { background: var(--primary-dark); box-shadow: var(--shadow); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { background: var(--panel); color: var(--text); border: 1px solid var(--border-strong); }
+  button.secondary:hover { background: var(--panel-2); }
+  button.blue { background: var(--blue); }
+  button.blue:hover { background: #2563eb; }
+  button.red, button.danger { background: var(--red); }
+  button.red:hover, button.danger:hover { background: #dc2626; }
+  button.purple { background: var(--purple); }
+  button.purple:hover { background: #7c3aed; }
+  button.orange { background: var(--orange); }
+  button.orange:hover { background: #ea580c; }
+  button.small { padding: 6px 11px; font-size: 12px; }
+  button.icon { padding: 8px; min-width: 36px; justify-content: center; }
+  button.ghost { background: transparent; color: var(--text-muted); box-shadow: none; }
+  button.ghost:hover { background: var(--panel-2); color: var(--text); }
+
+  input, select, textarea {
+    background: var(--panel); border: 1px solid var(--border-strong);
+    color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 13px;
+    outline: none; font-family: inherit; width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+  input.mono, textarea.mono { font-family: ui-monospace, SFMono-Regular, monospace; }
+  label.fld { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+  /* === STATS === */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; box-shadow: var(--shadow-sm);
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--primary);
+  }
+  .stat-card.blue::before { background: var(--blue); }
+  .stat-card.purple::before { background: var(--purple); }
+  .stat-card.orange::before { background: var(--orange); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.yellow::before { background: var(--yellow); }
+  .stat-card .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; font-weight: 600; }
+  .stat-card .num { font-size: 24px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .stat-card .delta { font-size: 11px; color: var(--text-muted); }
+  .stat-card .delta.up { color: var(--primary-dark); }
+  .stat-card .delta.down { color: var(--red); }
+  body.dark .stat-card .delta.up { color: var(--primary); }
+
+  /* === CLIENT CARD === */
+  .client-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px; box-shadow: var(--shadow-sm);
+    transition: all 0.15s;
+  }
+  .client-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .client-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px; }
+  .client-name { font-size: 16px; font-weight: 700; }
+  .client-meta { color: var(--text-muted); font-size: 11px; font-family: ui-monospace, monospace; margin-bottom: 14px; }
+  .client-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; padding: 12px; background: var(--panel-2); border-radius: 9px; }
+  .mini-stat { text-align: center; }
+  .mini-stat .num { font-size: 16px; font-weight: 700; }
+  .mini-stat .num.big { font-size: 19px; }
+  .mini-stat .lbl { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+  .mini-stat.warn .num { color: var(--yellow); }
+
+  /* === BADGES === */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .badge.success { background: var(--primary-light); color: var(--primary-dark); }
+  .badge.info { background: var(--blue-light); color: var(--blue); }
+  .badge.danger { background: var(--red-light); color: var(--red); }
+  .badge.warn { background: var(--yellow-light); color: #92400e; }
+  .badge.muted { background: var(--gray-200); color: var(--text-muted); }
+  .badge.purple { background: var(--purple-light); color: var(--purple); }
+  body.dark .badge.success { color: var(--primary); }
+  body.dark .badge.warn { color: var(--yellow); }
+
+  /* === LOG PANEL === */
+  .log-panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .log-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .log-head .title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 6px var(--primary); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .log-head .controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .log-filters { padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--panel-2); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .log-filters input { flex: 1; min-width: 200px; }
+  .log-content {
+    padding: 12px 16px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 11.5px; line-height: 1.6;
+    overflow-y: auto; max-height: 480px;
+    background: var(--panel-2);
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .log-content .ts { color: var(--text-soft); }
+  .log-content .ok { color: var(--primary-dark); }
+  body.dark .log-content .ok { color: var(--primary); }
+  .log-content .err { color: var(--red); font-weight: 500; }
+  .log-content .warn { color: var(--yellow); }
+  .log-content .info { color: var(--text); }
+  .log-content .muted { color: var(--text-muted); opacity: 0.9; }
+  .log-content.hide-requests .log-req { display: none !important; }
+  .log-line { display: block; padding: 1px 0; }
+
+  /* === MODAL === */
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(15,23,42,0.6); backdrop-filter: blur(4px);
+    z-index: 100; overflow-y: auto; padding: 30px 20px;
+    animation: fadeIn 0.15s;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-bg.open { display: block; }
+  .modal {
+    max-width: 720px; margin: 0 auto; background: var(--panel);
+    border-radius: 14px; padding: 24px;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.2s;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+  .modal-fld { margin-bottom: 14px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* === SWITCH === */
+  .switch { position: relative; width: 38px; height: 22px; background: var(--gray-300); border-radius: 99px; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .switch.on { background: var(--primary); }
+  .switch .knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: left 0.2s; box-shadow: var(--shadow-sm); }
+  .switch.on .knob { left: 18px; }
+  .switch-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+
+  /* === PANEL ROW (used in modal for panel_ids) === */
+  .panel-row { display: grid; grid-template-columns: 2fr 1.5fr auto; gap: 8px; margin-bottom: 6px; }
+  .btn-rm { background: transparent; color: var(--red); border: 1px solid var(--border-strong); padding: 8px 10px; box-shadow: none; }
+
+  /* === TOAST === */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(40px); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 200; opacity: 0; transition: all 0.25s; box-shadow: var(--shadow-lg); pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); color: white; }
+  .toast.success { background: var(--primary); color: white; }
+
+  /* === MISC === */
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .grid { display: grid; gap: 16px; }
+  .grid-cards { grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); }
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* === HEALTH PILLS === */
+  .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .health-pill { background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; }
+  .health-pill .ico { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .health-pill .ico.green { background: var(--primary-light); color: var(--primary-dark); }
+  .health-pill .ico.blue { background: var(--blue-light); color: var(--blue); }
+  .health-pill .ico.red { background: var(--red-light); color: var(--red); }
+  .health-pill .ico.yellow { background: var(--yellow-light); color: var(--yellow); }
+  .health-pill .info { flex: 1; min-width: 0; }
+  .health-pill .lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+  .health-pill .val { font-size: 13px; font-weight: 600; }
+  .health-pill .val.small { font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--text-muted); font-weight: normal; }
+
+  /* === CHART (mini bar chart via CSS) === */
+  .chart-mini { display: flex; align-items: flex-end; gap: 3px; height: 60px; padding: 10px 0; }
+  .chart-bar { flex: 1; background: linear-gradient(to top, var(--primary), var(--blue)); border-radius: 3px 3px 0 0; min-height: 4px; position: relative; transition: opacity 0.2s; }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-bar .tip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 3px 8px; border-radius: 6px; font-size: 10px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; margin-bottom: 4px; }
+  .chart-bar:hover .tip { opacity: 1; }
+
+  /* === FOLD === */
+  details > summary { cursor: pointer; padding: 8px 12px; border-radius: 8px; user-select: none; }
+  details > summary:hover { background: var(--panel-2); }
+  details[open] > summary { margin-bottom: 8px; }
+
+  /* === TABLE === */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 9px 10px; font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--panel-2); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============= SIDEBAR ============= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg width="28" height="28" viewBox="0 0 100 100" fill="none">
+          <path d="M50 5C25 5 5 23 5 47c0 12 5 23 13 31L13 92l16-5c6 3 14 5 21 5 25 0 45-18 45-42S75 5 50 5z" fill="white"/>
+          <circle cx="50" cy="35" r="6" fill="white" stroke="#10b981" stroke-width="2.5"/>
+          <circle cx="32" cy="52" r="6" fill="white" stroke="#10b981" stroke-width="2.5"/>
+          <circle cx="68" cy="52" r="6" fill="white" stroke="#10b981" stroke-width="2.5"/>
+          <circle cx="50" cy="68" r="6" fill="white" stroke="#10b981" stroke-width="2.5"/>
+          <line x1="50" y1="41" x2="50" y2="62" stroke="white" stroke-width="2.5"/>
+          <line x1="38" y1="52" x2="62" y2="52" stroke="white" stroke-width="2.5"/>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <div class="name">LawChat Sync</div>
+        <div class="sub">Admin Control</div>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Geral</div>
+    <a class="nav-link active" data-tab="dashboard" onclick="setTab('dashboard')"><span class="ico">📊</span>Dashboard</a>
+    <a class="nav-link" data-tab="clientes" onclick="setTab('clientes')"><span class="ico">👥</span>Clientes <span class="badge" id="navClientsCount">0</span></a>
+    <a class="nav-link" data-tab="syncs" onclick="setTab('syncs')"><span class="ico">⏰</span>Cron & Syncs</a>
+
+    <div class="nav-section-label">Monitoramento</div>
+    <a class="nav-link" data-tab="logs" onclick="setTab('logs')"><span class="ico">📜</span>Logs ao Vivo</a>
+    <a class="nav-link" data-tab="historico" onclick="setTab('historico')"><span class="ico">📋</span>Histórico</a>
+    <a class="nav-link" data-tab="diagnostics" onclick="setTab('diagnostics')"><span class="ico">🔧</span>Diagnostics</a>
+
+    <div class="nav-section-label">Sistema</div>
+    <a class="nav-link" data-tab="config" onclick="setTab('config')"><span class="ico">⚙️</span>Configurações</a>
+
+    <div class="spacer"></div>
+    <div class="sidebar-foot">
+      <a class="nav-link" onclick="toggleDark()"><span class="ico">🌙</span><span id="darkLbl">Modo Escuro</span></a>
+      <a class="nav-link" href="/" target="_blank"><span class="ico">🚀</span>Dashboard Cliente</a>
+    </div>
+  </aside>
+
+  <!-- ============= MAIN ============= -->
+  <main class="content">
+
+    <!-- ====== TAB: DASHBOARD ====== -->
+    <div id="tab-dashboard" class="tab-pane">
+      <div class="page-head">
+        <div>
+          <h1>📊 Dashboard</h1>
+          <div class="subtitle">Visão geral em tempo real do sistema</div>
+        </div>
+        <div class="actions">
+          <button class="secondary small" onclick="loadAll()">↻ Atualizar</button>
+        </div>
+      </div>
+
+      <!-- Stats principais -->
+      <div class="stats-grid" id="dashStats"></div>
+
+      <!-- Health + Chart row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">🏥 Saúde do Sistema</div>
+              <div class="card-sub">Status de conexões e serviços</div>
+            </div>
+          </div>
+          <div class="health-grid" id="healthGrid"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">📈 Atividade — últimas 24h</div>
+              <div class="card-sub">Syncs por hora</div>
+            </div>
+          </div>
+          <div class="chart-mini" id="chartActivity"></div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">⚡ Ações Rápidas</div>
+            <div class="card-sub">Comandos do sistema</div>
+          </div>
+        </div>
+        <div class="row">
+          <button onclick="syncAll()">⚡ Sync TODOS</button>
+          <button class="blue" onclick="runCronNow('hourly')">▶ Cron Horário Agora</button>
+          <button class="purple" onclick="runCronNow('nightly')">🌙 Cron Noturno Agora</button>
+          <button class="orange" onclick="cleanStaleLocks()">🧹 Limpar Locks</button>
+          <button class="secondary" onclick="setTab('logs')">📜 Ver Logs</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== TAB: CLIENTES ====== -->
+    <div id="tab-clientes" class="tab-pane" style="display:none;">
+      <div class="page-head">
+        <div>
+          <h1>👥 Clientes</h1>
+          <div class="subtitle"><span id="totalClients">carregando...</span></div>
+        </div>
+        <div class="actions">
+          <button class="blue" onclick="syncAll()">⚡ Sync TODOS</button>
+          <button onclick="openClientForm()"><span style="font-size:16px;">+</span> Adicionar Cliente</button>
+        </div>
+      </div>
+
+      <!-- Cron Controls -->
+      <div class="card" style="background: var(--panel-2); margin-bottom:16px;">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+          💡 <strong>Fluxo:</strong> Cadastra cliente → clica <strong>⚡ Sync Total</strong> uma vez → cliente entra no cron automaticamente.
+        </div>
+        <div class="row">
+          <strong style="font-size:13px;">⏰ Crons:</strong>
+          <div class="switch-row">
+            <div class="switch on" id="cron-hourly" onclick="toggleCron('hourly')"><div class="knob"></div></div>
+            <span>Horário</span>
+            <span id="cron-hourly-info" style="font-size:11px;color:var(--text-muted);"></span>
+          </div>
+          <div class="switch-row">
+            <div class="switch on" id="cron-nightly" onclick="toggleCron('nightly')"><div class="knob"></div></div>
+            <span>Noturno (3h)</span>
+            <span id="cron-nightly-info" style="font-size:11px;color:var(--text-muted);"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cards" id="clientsGrid"><div class="empty">Carregando clientes...</div></div>
+    </div>
+
+    <!-- ====== TAB: SYNCS ====== -->
+    <div id="tab-syncs" class="tab-pane" style="display:none;">
+      <div class="page-head">
+        <div>
+          <h1>⏰ Cron & Sincronizações</h1>
+          <div class="subtitle">Controle dos jobs automáticos</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Status atual</div>
+        </div>
+        <div id="cronDetailed"></div>
+      </div>
+    </div>
+
+    <!-- ====== TAB: LOGS ====== -->
+    <div id="tab-logs" class="tab-pane" style="display:none;">
+      <div class="page-head">
+        <div>
+          <h1>📜 Logs ao Vivo</h1>
+          <div class="subtitle">Stream contínuo de eventos do servidor</div>
+        </div>
+      </div>
+      <div class="log-panel" style="height:calc(100vh - 200px);">
+        <div class="log-head">
+          <div class="title">
+            <span class="live-dot"></span>
+            Eventos em tempo real
+          </div>
+          <div class="controls">
+            <button class="secondary small" id="toggleReqBtn" onclick="toggleReqDisplay()">👁 Esconder Requests</button>
+            <button class="secondary small" onclick="toggleAutoScroll()" id="autoScrollBtn">📌 Auto-scroll: ON</button>
+            <button class="secondary small" onclick="exportLog()">⬇ Exportar</button>
+            <button class="secondary small" onclick="clearLog()">Limpar</button>
+          </div>
+        </div>
+        <div class="log-filters">
+          <input id="logFilter" placeholder="🔍 Filtrar (ex: '429', 'sousa', 'sync-cards')..." oninput="renderLog()" />
+          <select id="logLevelFilter" onchange="renderLog()" style="width:auto;">
+            <option value="all">Todos níveis</option>
+            <option value="ok">Sucesso</option>
+            <option value="warn">Avisos</option>
+            <option value="err">Erros</option>
+          </select>
+        </div>
+        <div class="log-content" id="logContent" style="flex:1; max-height:none;"></div>
+      </div>
+    </div>
+
+    <!-- ====== TAB: HISTÓRICO ====== -->
+    <div id="tab-historico" class="tab-pane" style="display:none;">
+      <div class="page-head">
+        <div>
+          <h1>📋 Histórico de Syncs</h1>
+          <div class="subtitle">Últimas 50 execuções registradas no banco</div>
+        </div>
+        <div class="actions">
+          <button class="secondary small" onclick="loadSyncHistory()">↻ Recarregar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="historyContent"><div class="empty">Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ====== TAB: DIAGNOSTICS ====== -->
+    <div id="tab-diagnostics" class="tab-pane" style="display:none;">
+      <div class="page-head">
+        <div>
+          <h1>🔧 Diagnostics</h1>
+          <div class="subtitle">Testes de endpoints e conexões</div>
+        </div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;">
+        <div class="card">
+          <div class="card-head"><div class="card-title">🔌 Testes de Conexão</div></div>
+          <div class="row" style="flex-direction:column;align-items:stretch;gap:8px;">
+            <button class="secondary" onclick="testEndpoint('/api/health', 'GET')">🏥 Health Check (DB)</button>
+            <button class="secondary" onclick="testEndpoint('/api/cron/status', 'GET')">⏰ Cron Status</button>
+            <button class="secondary" onclick="testEndpoint('/api/clients', 'GET')">👥 Listar Clientes</button>
+            <button class="secondary" onclick="testEndpoint('/api/sync-log?limit=5', 'GET')">📋 Sync Log</button>
+            <button class="secondary" onclick="testWebhook()">🪝 Test Webhook</button>
+            <button class="secondary" onclick="testNotificationConfig()">📱 Test Notificação (Z-API)</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">🔧 Manutenção</div></div>
+          <div class="row" style="flex-direction:column;align-items:stretch;gap:8px;">
+            <button class="orange" onclick="cleanStaleLocks()">🧹 Liberar Locks Travados</button>
+            <button class="secondary" onclick="loadAll()">↻ Recarregar Todos os Dados</button>
+            <button class="secondary" onclick="copyApiUrls()">📋 Copiar URLs dos Endpoints</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-head"><div class="card-title">📤 Resposta</div></div>
+        <pre id="diagnosticOutput" style="background:var(--panel-2);padding:12px;border-radius:8px;font-size:11px;overflow:auto;max-height:300px;margin:0;">Clique em um teste acima pra ver a resposta…</pre>
+      </div>
+    </div>
+
+    <!-- ====== TAB: CONFIG ====== -->
+    <div id="tab-config" class="tab-pane" style="display:none;">
+      <div class="page-head">
+        <div>
+          <h1>⚙️ Configurações</h1>
+          <div class="subtitle">Sistema, banco e preferências</div>
+        </div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;">
+        <div class="card">
+          <div class="card-head"><div class="card-title">💾 Banco de Dados</div></div>
+          <div id="dbInfo" style="font-family:ui-monospace,monospace;font-size:12px;color:var(--text-muted);">checando...</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">🔗 Endpoints</div></div>
+          <div style="font-family:ui-monospace,monospace;font-size:11.5px;color:var(--text-muted);line-height:1.8;">
+            <div>📍 <code>localhost:8787/sync</code> — Admin (este painel)</div>
+            <div>📍 <code>localhost:8787/</code> — Dashboard cliente (login + visualização)</div>
+            <div>📍 <code>localhost:8787/d/:company_id</code> — Cliente específico</div>
+            <div>📍 <code>localhost:8787/api/webhooks/helena</code> — Webhook entrada</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ============= MODAL: CLIENTE (rico, estilo Lovable) ============= -->
+<div class="modal-bg" id="clientModalBg">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h2 id="modalTitle">Cliente</h2>
+      <button class="secondary small icon" onclick="closeClientForm()">✕</button>
+    </div>
+
+    <!-- Linha 1: Nome + LawChat ID -->
+    <div class="grid-2">
+      <div>
+        <label class="fld">Nome do Cliente *</label>
+        <input id="f_name" type="text" placeholder="ex: Sousa & Costa" />
+      </div>
+      <div>
+        <label class="fld">LawChat ID (Company ID)</label>
+        <input id="f_company_id" type="text" placeholder="UUID" class="mono" oninput="updateUrlPreview()" />
+        <div class="url-preview" id="urlPreview" onclick="copyPreviewUrl()" title="Clica pra copiar"></div>
+      </div>
+    </div>
+
+    <!-- Linha 2: API Key + Nível -->
+    <div class="grid-2" style="margin-top:14px;">
+      <div>
+        <label class="fld">API Key LawChat *</label>
+        <div class="input-with-eye">
+          <input id="f_api_key" type="password" placeholder="pn_..." class="mono" />
+          <button class="eye" onclick="togglePasswordView('f_api_key')" type="button">👁</button>
+        </div>
+      </div>
+      <div>
+        <label class="fld">Nível de Atenção</label>
+        <select id="f_nivel_atencao">
+          <option value="1">🟢 Nível 1 - Baixo</option>
+          <option value="2">🟡 Nível 2 - Médio</option>
+          <option value="3">🔴 Nível 3 - Alto</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Funcionalidades -->
+    <div class="modal-section">
+      <div class="modal-section-head">
+        <div class="title">⚙️ Funcionalidades</div>
+        <span class="hint">Ative as features do dashboard do cliente</span>
+      </div>
+      <div class="features-grid" id="featuresGrid"></div>
+    </div>
+
+    <!-- Painéis CRM -->
+    <div class="modal-section">
+      <div class="modal-section-head">
+        <div class="title">📋 Painéis CRM <span style="color:var(--text-muted);font-weight:400;font-size:12px;">(vazio = todos)</span></div>
+        <button class="secondary small" onclick="addPanelRowRich()">+ Adicionar Painel</button>
+      </div>
+      <div id="panelsList"></div>
+    </div>
+
+    <!-- Números do Cliente -->
+    <div class="modal-section">
+      <div class="modal-section-head">
+        <div class="title">📞 Números do Cliente (Dashboard)</div>
+        <button class="secondary small" onclick="carregarNumeros()">↻ Carregar Números</button>
+      </div>
+      <div class="hint" style="margin-bottom:10px;font-size:11px;color:var(--text-muted);">
+        Selecione os números que devem aparecer no dashboard. Se nenhum for selecionado, todos serão exibidos.
+        Os números são carregados das sessões já sincronizadas.
+      </div>
+      <div id="numerosList" style="padding:14px;background:var(--panel-2);border-radius:9px;text-align:center;color:var(--text-muted);font-size:12px;">
+        Clique em "Carregar Números" pra buscar do banco
+      </div>
+    </div>
+
+    <!-- Mapeamento de Etapas -->
+    <div class="modal-section">
+      <div class="modal-section-head">
+        <div class="title">🎯 Mapeamento de Etapas</div>
+        <button class="secondary small" onclick="carregarEtapas()">↻ Carregar Etapas</button>
+      </div>
+      <div class="hint" style="margin-bottom:10px;font-size:11px;color:var(--text-muted);">
+        Clique em "Carregar Etapas" para buscar do CRM. Múltiplas etapas podem apontar para o mesmo estágio do funil.
+      </div>
+      <div id="etapasList"></div>
+      <button class="secondary small" onclick="addStepMapping()" style="margin-top:6px;">+ Adicionar Manual</button>
+    </div>
+
+    <!-- Ativo -->
+    <div class="modal-section">
+      <div class="switch-row">
+        <div class="switch on" id="f_active_switch" onclick="toggleSwitch('f_active_switch')"><div class="knob"></div></div>
+        <span>Cliente ativo no sistema</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button onclick="saveClient()">💾 Salvar</button>
+      <button class="blue" onclick="saveClientAndSync()">💾 Salvar + Sync Total</button>
+      <div style="flex:1;"></div>
+      <button class="danger" id="deleteBtn" onclick="deleteClient()" style="display:none;">🗑 Deletar</button>
+      <button class="secondary" onclick="closeClientForm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let clients = [];
+let editingId = null;
+let panelRows = [];
+let allLogEvents = [];   // armazena TUDO localmente pra poder filtrar
+let autoScroll = true;
+let lastEventId = 0;
+let logPollActive = false;
+
+// ============== TAB NAV ==============
+function setTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+  $(`tab-${tab}`).style.display = 'block';
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  if (tab === 'historico') loadSyncHistory();
+}
+
+// ============== DARK MODE ==============
+function toggleDark() {
+  document.body.classList.toggle('dark');
+  $('darkLbl').textContent = document.body.classList.contains('dark') ? 'Modo Claro' : 'Modo Escuro';
+  localStorage.setItem('dark', document.body.classList.contains('dark') ? '1' : '0');
+}
+if (localStorage.getItem('dark') === '1') toggleDark();
+
+// ============== TOAST ==============
+function toast(msg, type = '') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// ============== TIMESTAMPS ==============
+function ts() { return new Date().toLocaleTimeString('pt-BR'); }
+function fmt(d) { return d ? new Date(d).toLocaleString('pt-BR') : '—'; }
+function timeAgo(d) {
+  if (!d) return '—';
+  const diff = (Date.now() - new Date(d).getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s atrás`;
+  if (diff < 3600) return `${Math.floor(diff/60)}min atrás`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h atrás`;
+  return `${Math.floor(diff/86400)}d atrás`;
+}
+
+// ============== HEALTH ==============
+async function loadHealth() {
+  const grid = $('healthGrid');
+  const items = [];
+  try {
+    const r = await fetch('/api/health'); const d = await r.json();
+    items.push({ ico: '💾', cls: d.db === 'ok' ? 'green' : 'red', lbl: 'Banco', val: d.db === 'ok' ? 'OK · ' + d.db_name : 'Erro' });
+  } catch { items.push({ ico: '💾', cls: 'red', lbl: 'Banco', val: 'Offline' }); }
+  try {
+    const r = await fetch('/api/cron/status'); const d = await r.json();
+    items.push({ ico: '⏰', cls: d.hourly.enabled ? 'green' : 'red', lbl: 'Cron Horário', val: d.hourly.enabled ? (d.hourly.running ? 'Rodando' : 'Ligado') : 'Desligado' });
+    items.push({ ico: '🌙', cls: d.nightly.enabled ? 'green' : 'red', lbl: 'Cron Noturno', val: d.nightly.enabled ? (d.nightly.running ? 'Rodando' : 'Ligado') : 'Desligado' });
+  } catch {}
+  items.push({ ico: '🌐', cls: 'blue', lbl: 'Server', val: 'localhost:8787', valClass: 'small' });
+  items.push({ ico: '⚡', cls: 'blue', lbl: 'Eventos no buffer', val: allLogEvents.length });
+  grid.innerHTML = items.map(i => `
+    <div class="health-pill">
+      <div class="ico ${i.cls}">${i.ico}</div>
+      <div class="info">
+        <div class="lbl">${escapeHtml(i.lbl)}</div>
+        <div class="val ${i.valClass||''}">${escapeHtml(String(i.val))}</div>
+      </div>
+    </div>
+  `).join('');
+  $('dbInfo').textContent = items.find(i => i.lbl === 'Banco')?.val || 'desconhecido';
+}
+
+// ============== STATS DASHBOARD ==============
+function renderDashStats() {
+  const total = clients.length;
+  const active = clients.filter(c => c.active).length;
+  const synced = clients.filter(c => c.first_sync_done).length;
+  const cards = clients.reduce((a,c) => a + (Number(c.cards_count)||0), 0);
+  const sessions = clients.reduce((a,c) => a + (Number(c.sessions_count)||0), 0);
+  const contacts = clients.reduce((a,c) => a + (Number(c.contacts_count)||0), 0);
+  const pending = clients.reduce((a,c) => a + (Number(c.cards_pending_sessions)||0), 0);
+  const stats = [
+    { lbl: 'Clientes', num: total, sub: `${active} ativos`, cls: 'blue' },
+    { lbl: 'Cards Sincronizados', num: cards.toLocaleString('pt-BR'), sub: 'no banco', cls: '' },
+    { lbl: 'Sessions', num: sessions.toLocaleString('pt-BR'), sub: 'conversas', cls: 'purple' },
+    { lbl: 'Contacts', num: contacts.toLocaleString('pt-BR'), sub: 'contatos únicos', cls: 'orange' },
+    { lbl: 'Aguardando Sessions', num: pending.toLocaleString('pt-BR'), sub: 'cards pendentes', cls: pending > 0 ? 'yellow' : '' },
+    { lbl: 'First Sync OK', num: `${synced}/${total}`, sub: 'clientes prontos', cls: 'blue' },
+  ];
+  $('dashStats').innerHTML = stats.map(s => `
+    <div class="stat-card ${s.cls}">
+      <div class="lbl">${escapeHtml(s.lbl)}</div>
+      <div class="num">${s.num}</div>
+      <div class="delta">${escapeHtml(s.sub)}</div>
+    </div>
+  `).join('');
+}
+
+// ============== CHART ATIVIDADE 24h ==============
+async function loadActivityChart() {
+  try {
+    const r = await fetch('/api/sync-log?limit=200');
+    const d = await r.json();
+    const logs = d.logs || [];
+    // Agrupa por hora nas últimas 24h
+    const now = new Date();
+    const buckets = new Array(24).fill(0);
+    for (const l of logs) {
+      const t = new Date(l.started_at);
+      const diffH = Math.floor((now - t) / (60*60*1000));
+      if (diffH >= 0 && diffH < 24) buckets[23 - diffH]++;
+    }
+    const max = Math.max(...buckets, 1);
+    $('chartActivity').innerHTML = buckets.map((v,i) => {
+      const pct = (v / max) * 100;
+      const hr = new Date(now.getTime() - (23-i)*60*60*1000).getHours();
+      return `<div class="chart-bar" style="height:${pct}%;"><div class="tip">${v} sync(s) às ${hr}h</div></div>`;
+    }).join('');
+  } catch (e) { /* silent */ }
+}
+
+// ============== CLIENTS ==============
+async function loadClients() {
+  try {
+    const r = await fetch('/api/clients');
+    const d = await r.json();
+    clients = d.clients || [];
+    $('navClientsCount').textContent = clients.length;
+    $('totalClients').textContent = `${clients.length} cliente(s) • ${clients.filter(c => c.active).length} ativos`;
+    renderClients();
+    renderDashStats();
+  } catch (e) {
+    $('clientsGrid').innerHTML = `<div class="empty">Erro: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderClients() {
+  if (!clients.length) {
+    $('clientsGrid').innerHTML = '<div class="empty">Nenhum cliente. Clica "+ Adicionar Cliente"</div>';
+    return;
+  }
+  $('clientsGrid').innerHTML = clients.map((c) => {
+    let badge;
+    if (c.lockedFor > 0) badge = `<span class="badge danger">🔒 ${Math.ceil(c.lockedFor/1000)}s</span>`;
+    else if (!c.active) badge = '<span class="badge muted">Inativo</span>';
+    else if (c.first_sync_done) badge = '<span class="badge success">🤖 No cron</span>';
+    else badge = '<span class="badge warn">⚠️ Precisa Sync Total</span>';
+
+    return `
+      <div class="client-card">
+        <div class="client-head">
+          <div>
+            <div class="client-name">${escapeHtml(c.name)}</div>
+            <div class="client-meta">
+              ${c.helena_company_id ? `LawChat: ${escapeHtml(c.helena_company_id.slice(0,8))}…` : 'sem LawChat ID'}
+              • ${c.panel_ids?.length ? `<span style="color:var(--primary-dark);font-weight:600;">${c.panel_ids.length} painel(éis)</span>` : '<span>todos painéis</span>'}
+            </div>
+          </div>
+          ${badge}
+        </div>
+        <div class="client-stats">
+          <div class="mini-stat"><div class="num">${c.panels_count||0}</div><div class="lbl">Panels</div></div>
+          <div class="mini-stat"><div class="num big">${(c.cards_count||0).toLocaleString('pt-BR')}</div><div class="lbl">Cards</div></div>
+          <div class="mini-stat ${c.cards_pending_sessions > 0 ? 'warn' : ''}"><div class="num">${c.cards_pending_sessions||0}</div><div class="lbl">Pending</div></div>
+          <div class="mini-stat"><div class="num">${(c.sessions_count||0).toLocaleString('pt-BR')}</div><div class="lbl">Sessions</div></div>
+          <div class="mini-stat"><div class="num">${(c.contacts_count||0).toLocaleString('pt-BR')}</div><div class="lbl">Contacts</div></div>
+        </div>
+        <div class="row" style="gap:6px;">
+          <button class="secondary small" onclick="openClientForm('${c.id}')">✏ Editar</button>
+          <button class="purple small" onclick="openClientDashboard('${c.id}')" title="Abre o dashboard visual em nova aba">👁 Visualizar</button>
+          <button class="secondary small" onclick="syncOne('cards', '${c.id}')">↻ Sync Cards</button>
+          <button class="blue small" onclick="syncCascade('${c.id}')">⚡ Sync Total</button>
+          <div style="flex:1"></div>
+          <button class="ghost small" onclick="quickDelete('${c.id}')" title="Deletar">🗑</button>
+        </div>
+        ${c.last_synced_at ? `<div style="margin-top:10px;font-size:11px;color:var(--text-muted);">Última sync: ${timeAgo(c.last_synced_at)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ============== MODAL CLIENTE (versão rica) ==============
+const FEATURES = [
+  { key: 'dashboard',   icon: '📊', name: 'Dashboard' },
+  { key: 'pipeline',    icon: '📑', name: 'Pipeline' },
+  { key: 'campanhas',   icon: '📣', name: 'Campanhas' },
+  { key: 'auditoria',   icon: '🔍', name: 'Auditoria' },
+  { key: 'ao_vivo',     icon: '🔴', name: 'Ao Vivo' },
+  { key: 'contratos',   icon: '📄', name: 'Contratos' },
+  { key: 'follow_up',   icon: '📞', name: 'Follow-up' },
+  { key: 'notificacoes',icon: '🔔', name: 'Central de Notificações' },
+  { key: 'agente_ia',   icon: '🤖', name: 'Agente IA' },
+  { key: 'templates_api',icon: '📋', name: 'Templates API Oficial' },
+];
+let stepMappings = [];   // [{ step_id, step_title, funnel_stage }]
+let numerosDisponiveis = []; // ['(31) 98358-8892', ...]
+let numerosSelecionados = new Set();
+
+function openClientForm(id = null) {
+  editingId = id;
+  $('modalTitle').textContent = id ? 'Editar Cliente' : 'Novo Cliente';
+  $('deleteBtn').style.display = id ? 'inline-flex' : 'none';
+
+  // Reseta tudo
+  $('f_name').value = '';
+  $('f_company_id').value = '';
+  $('f_api_key').value = '';
+  $('f_api_key').type = 'password';
+  $('f_nivel_atencao').value = '1';
+  $('f_active_switch').classList.add('on');
+  panelRows = [];
+  stepMappings = [];
+  numerosDisponiveis = [];
+  numerosSelecionados = new Set();
+  let features = {};
+
+  if (id) {
+    const c = clients.find(x => x.id === id);
+    $('f_name').value = c.name || '';
+    $('f_company_id').value = c.helena_company_id || '';
+    $('f_api_key').value = c.helena_api_key || '';
+    $('f_nivel_atencao').value = String(c.nivel_atencao || 1);
+    $('f_active_switch').classList.toggle('on', c.active !== false);
+    if (c.panels_config && c.panels_config.length) {
+      panelRows = c.panels_config.map(p => ({ id: p.panel_id || '', name: p.name || '', limit: p.limit || 10 }));
+    } else if (c.panel_ids && c.panel_ids.length) {
+      panelRows = c.panel_ids.map(id => ({ id, name: '', limit: 10 }));
+    }
+    if (c.numeros_dashboard && c.numeros_dashboard.length) {
+      numerosSelecionados = new Set(c.numeros_dashboard);
+    }
+    if (c.step_mappings && typeof c.step_mappings === 'object') {
+      stepMappings = Array.isArray(c.step_mappings)
+        ? c.step_mappings
+        : Object.entries(c.step_mappings).map(([k,v]) => ({ step_id: '', step_title: k, funnel_stage: v }));
+    }
+    features = c.features || {};
+  }
+  if (!panelRows.length) panelRows = [{ id: '', name: '', limit: 10 }];
+
+  renderFeatures(features);
+  renderPanelsRich();
+  renderEtapas();
+  renderNumeros();
+  updateUrlPreview();
+  $('clientModalBg').classList.add('open');
+}
+
+function closeClientForm() { $('clientModalBg').classList.remove('open'); editingId = null; }
+function toggleSwitch(id) { $(id).classList.toggle('on'); }
+function isSwitchOn(id) { return $(id).classList.contains('on'); }
+
+function togglePasswordView(id) {
+  const inp = $(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function updateUrlPreview() {
+  const cid = $('f_company_id').value.trim();
+  $('urlPreview').textContent = cid ? `${location.origin}/d/${cid}` : '';
+}
+function copyPreviewUrl() {
+  const url = $('urlPreview').textContent;
+  if (!url) return;
+  navigator.clipboard.writeText(url).then(() => toast('URL copiada ✓', 'success'));
+}
+
+// === FEATURES ===
+function renderFeatures(features) {
+  $('featuresGrid').innerHTML = FEATURES.map(f => `
+    <div class="feature-row">
+      <div class="switch ${features[f.key] ? 'on' : ''}" id="feat-${f.key}" onclick="toggleSwitch('feat-${f.key}')"><div class="knob"></div></div>
+      <span class="name">${f.icon} ${f.name}</span>
+    </div>
+  `).join('');
+}
+function gatherFeatures() {
+  const out = {};
+  FEATURES.forEach(f => { out[f.key] = isSwitchOn(`feat-${f.key}`); });
+  return out;
+}
+
+// === PAINÉIS (rich version, com limit) ===
+function addPanelRowRich() { panelRows.push({ id: '', name: '', limit: 10 }); renderPanelsRich(); }
+function removePanelRowRich(i) {
+  panelRows.splice(i, 1);
+  if (!panelRows.length) panelRows = [{ id: '', name: '', limit: 10 }];
+  renderPanelsRich();
+}
+function renderPanelsRich() {
+  $('panelsList').innerHTML = panelRows.map((p,i) => `
+    <div class="panel-row-rich">
+      <input class="mono" type="text" placeholder="ID do Painel" value="${escapeHtml(p.id)}" oninput="panelRows[${i}].id=this.value" />
+      <input type="text" placeholder="Nome (opcional)" value="${escapeHtml(p.name)}" oninput="panelRows[${i}].name=this.value" />
+      <input type="number" placeholder="10" value="${p.limit||10}" oninput="panelRows[${i}].limit=Number(this.value)" min="1" max="1000" />
+      <button class="btn-rm small" onclick="removePanelRowRich(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+// === NÚMEROS DO CLIENTE (busca de helena_sessions) ===
+async function carregarNumeros() {
+  const cid = $('f_company_id').value.trim();
+  if (!cid && !editingId) { toast('Preencha o LawChat ID primeiro', 'error'); return; }
+  $('numerosList').innerHTML = '⏳ Carregando...';
+  try {
+    const params = editingId ? `?clientId=${editingId}` : `?helenaCompanyId=${cid}`;
+    const r = await fetch('/api/admin/numeros' + params);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    numerosDisponiveis = d.numeros || [];
+    renderNumeros();
+    if (!numerosDisponiveis.length) {
+      $('numerosList').innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:10px;">Nenhum número disponível ainda. Faça o sync primeiro.</div>';
+    } else {
+      toast(`${numerosDisponiveis.length} números carregados`, 'success');
+    }
+  } catch (e) {
+    $('numerosList').innerHTML = `<div style="color:var(--red);font-size:12px;">Erro: ${escapeHtml(e.message)}</div>`;
+  }
+}
+function renderNumeros() {
+  if (!numerosDisponiveis.length) return;
+  const html = `
+    <div style="margin-bottom:8px;font-size:11px;color:var(--text-muted);">
+      ${numerosDisponiveis.length} número(s) encontrados • ${numerosSelecionados.size} selecionado(s)
+      <button class="ghost small" style="margin-left:8px;" onclick="numerosToggleAll(true)">Selecionar todos</button>
+      <button class="ghost small" onclick="numerosToggleAll(false)">Limpar</button>
+    </div>
+    <div style="background:var(--panel-2);padding:10px;border-radius:9px;max-height:160px;overflow-y:auto;">
+      ${numerosDisponiveis.map(n => `
+        <span class="number-chip ${numerosSelecionados.has(n) ? 'selected' : ''}" onclick="numerosToggle('${escapeHtml(n)}')">${escapeHtml(n)}</span>
+      `).join('')}
+    </div>
+  `;
+  $('numerosList').innerHTML = html;
+}
+function numerosToggle(n) {
+  if (numerosSelecionados.has(n)) numerosSelecionados.delete(n);
+  else numerosSelecionados.add(n);
+  renderNumeros();
+}
+function numerosToggleAll(select) {
+  if (select) numerosDisponiveis.forEach(n => numerosSelecionados.add(n));
+  else numerosSelecionados.clear();
+  renderNumeros();
+}
+
+// === ETAPAS (mapping de funnel) ===
+async function carregarEtapas() {
+  if (!editingId) { toast('Salve o cliente primeiro pra carregar etapas', 'error'); return; }
+  try {
+    const r = await fetch(`/api/admin/etapas?clientId=${editingId}`);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    // Merge: mantém os que já existem, adiciona os novos
+    const existing = new Set(stepMappings.map(s => s.step_title));
+    for (const e of (d.etapas || [])) {
+      if (!existing.has(e.step_title)) {
+        stepMappings.push({ step_id: e.step_id || '', step_title: e.step_title, funnel_stage: e.funnel_stage || '' });
+      }
+    }
+    renderEtapas();
+    toast(`${d.etapas?.length || 0} etapas carregadas`, 'success');
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+}
+function addStepMapping() { stepMappings.push({ step_id: '', step_title: '', funnel_stage: '' }); renderEtapas(); }
+function removeStepMapping(i) { stepMappings.splice(i, 1); renderEtapas(); }
+function renderEtapas() {
+  if (!stepMappings.length) {
+    $('etapasList').innerHTML = '';
+    return;
+  }
+  const STAGES = ['SDR', 'CLOSER', 'CONTRATO', 'ASSINATURA', 'ASSINADO', 'DESQUALIFICADO', 'NAO_ASSINOU'];
+  $('etapasList').innerHTML = stepMappings.map((s,i) => `
+    <div class="step-row">
+      <input type="text" placeholder="Etapa LawChat (step_title)" value="${escapeHtml(s.step_title||'')}" oninput="stepMappings[${i}].step_title=this.value" />
+      <select onchange="stepMappings[${i}].funnel_stage=this.value">
+        <option value="">— escolher estágio —</option>
+        ${STAGES.map(st => `<option value="${st}" ${s.funnel_stage===st?'selected':''}>${st}</option>`).join('')}
+      </select>
+      <button class="btn-rm small" onclick="removeStepMapping(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function gatherFormData() {
+  const cleanPanels = panelRows.filter(p => p.id && p.id.trim());
+  const cleanSteps = stepMappings.filter(s => s.step_title && s.step_title.trim());
+  return {
+    name: $('f_name').value.trim(),
+    helena_api_key: $('f_api_key').value.trim(),
+    helena_company_id: $('f_company_id').value.trim() || null,
+    nivel_atencao: Number($('f_nivel_atencao').value) || 1,
+    panels_config: cleanPanels.map(p => ({ panel_id: p.id.trim(), name: p.name.trim(), limit: p.limit || 10 })),
+    panel_ids: cleanPanels.map(p => p.id.trim()),
+    numeros_dashboard: Array.from(numerosSelecionados),
+    step_mappings: cleanSteps,
+    features: gatherFeatures(),
+    active: isSwitchOn('f_active_switch'),
+  };
+}
+async function saveClient() {
+  const data = gatherFormData();
+  if (!data.name) return toast('Nome obrigatório', 'error');
+  if (!data.helena_api_key) return toast('API Key obrigatória', 'error');
+  const url = editingId ? `/api/admin/clients/${editingId}` : '/api/admin/clients';
+  const method = editingId ? 'PATCH' : 'POST';
+  try {
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    const d = await r.json();
+    if (d.error) return toast('Erro: ' + d.error, 'error');
+    toast(editingId ? 'Cliente atualizado ✓' : 'Cliente criado ✓', 'success');
+    log(`✓ ${editingId ? 'Atualizado' : 'Criado'}: ${d.client.name}`, 'ok');
+    closeClientForm(); await loadClients();
+    return d.client;
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+}
+async function saveClientAndSync() { const c = await saveClient(); if (c) syncCascade(c.id); }
+async function deleteClient() {
+  if (!editingId) return;
+  const c = clients.find(x => x.id === editingId);
+  if (!confirm(`Deletar "${c.name}" e TODOS os dados (cards, sessions, contacts)? CASCADE!`)) return;
+  try {
+    const r = await fetch(`/api/admin/clients/${editingId}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.error) return toast('Erro: ' + d.error, 'error');
+    log(`🗑 Cliente "${c.name}" deletado`, 'err');
+    toast('Cliente deletado ✓', 'success');
+    closeClientForm(); await loadClients();
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+}
+// Abre o dashboard visual do cliente em nova aba
+// REGRA: usa SEMPRE o helena_company_id (identificador master do LawChat)
+// Fallback pra slug/id só se não tiver company_id
+function openClientDashboard(id) {
+  const c = clients.find(x => x.id === id);
+  if (!c) return toast('Cliente não encontrado', 'error');
+  const identifier = c.helena_company_id || c.slug || c.id;
+  if (!identifier) return toast('Cliente sem helena_company_id pra abrir dashboard', 'error');
+  if (!c.helena_company_id) {
+    log(`⚠ "${c.name}" sem helena_company_id — usando fallback`, 'warn');
+  }
+  const url = `${location.origin}/d/${identifier}`;
+  window.open(url, '_blank');
+  log(`👁 Abrindo dashboard de "${c.name}" via helena_company_id`, 'info');
+}
+
+async function quickDelete(id) {
+  const c = clients.find(x => x.id === id);
+  if (!confirm(`Deletar "${c.name}" e TODOS os dados? CASCADE!`)) return;
+  try {
+    await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
+    log(`🗑 Cliente "${c.name}" deletado`, 'err');
+    toast('Cliente deletado ✓', 'success');
+    await loadClients();
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+// ============== SYNC ==============
+async function syncOne(type, clientId) {
+  const c = clients.find(x => x.id === clientId);
+  log(`▶ sync-${type} pra "${c.name}"`, 'ok');
+  try {
+    const body = { clientId };
+    if (type === 'sessions') body.limit = 50;
+    if (type === 'contacts') body.limit = 100;
+    const res = await fetch(`/api/sync-${type}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.body) throw new Error('sem stream');
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+    while (true) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop() || '';
+      for (const line of lines) { if (!line.trim()) continue; try { handleStream(JSON.parse(line), type); } catch {} }
+    }
+  } catch (e) { log(`✗ ${e.message}`, 'err'); }
+  await loadClients();
+}
+
+async function syncCascade(clientId) {
+  const c = clients.find(x => x.id === clientId);
+  log(`▶▶ CASCATA COMPLETA "${c.name}": cards + loop sessions + loop contacts`, 'ok');
+  log(`⏱  Aviso: pode demorar horas se for primeira sync (~12k cards)`, 'warn');
+  try {
+    const res = await fetch('/api/sync-cascade-full', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId }) });
+    if (!res.body) throw new Error('sem stream');
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+    while (true) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop() || '';
+      for (const line of lines) { if (!line.trim()) continue; try { handleStream(JSON.parse(line), 'cascade-full'); } catch {} }
+    }
+    log(`✓✓ Cascata COMPLETA pra "${c.name}"`, 'ok');
+  } catch (e) { log(`✗ Cascata falhou: ${e.message}`, 'err'); }
+  await loadClients();
+}
+
+async function syncAll() {
+  const active = clients.filter(c => c.active && !c.lockedFor);
+  if (!active.length) return toast('Nenhum cliente disponível', 'error');
+  if (!confirm(`Rodar Sync Total em ${active.length} cliente(s) em PARALELO?`)) return;
+  log(`▶▶▶ SYNC TODOS em PARALELO — ${active.length} cliente(s)`, 'ok');
+  await Promise.all(active.map(c => syncCascade(c.id).catch(e => log(`✗ ${c.name}: ${e.message}`, 'err'))));
+  log(`✓✓✓ SYNC TODOS concluído`, 'ok');
+}
+
+function handleStream(msg, type) {
+  if (msg.type === 'progress') {
+    if (msg.stage === 'aborted') return log(`⏸ ${msg.message||'cancelado'}`, 'err');
+    if (msg.stage === 'request') return; // requests vêm pelo event stream global
+    const parts = [];
+    if (msg.stage) parts.push(`[${msg.stage}]`);
+    if (msg.message) parts.push(msg.message);
+    if (msg.totalCards != null) parts.push(`total=${msg.totalCards}`);
+    log(parts.join(' '), 'info');
+  } else if (msg.type === 'done') {
+    const c = msg.counts || {};
+    log(`✓ sync-${type}: ${Object.entries(c).map(([k,v])=>`${k}=${v}`).join(', ')}`, 'ok');
+  } else if (msg.type === 'error') {
+    log(`✗ ${msg.error}`, 'err');
+  }
+}
+
+// ============== CRON ==============
+async function loadCronStatus() {
+  try {
+    const r = await fetch('/api/cron/status'); const d = await r.json();
+    $('cron-hourly').classList.toggle('on', d.hourly.enabled);
+    $('cron-nightly').classList.toggle('on', d.nightly.enabled);
+    $('cron-hourly-info').textContent = d.hourly.running ? '⏳ rodando' : (d.hourly.lastRun ? `última: ${timeAgo(d.hourly.lastRun)}` : 'nunca rodou');
+    $('cron-nightly-info').textContent = d.nightly.running ? '⏳ rodando' : (d.nightly.lastRun ? `última: ${timeAgo(d.nightly.lastRun)}` : 'nunca rodou');
+    // Cron detalhado (tab syncs)
+    $('cronDetailed').innerHTML = `
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="health-pill">
+          <div class="ico ${d.hourly.enabled?'green':'red'}">⏰</div>
+          <div class="info">
+            <div class="lbl">Cron Horário</div>
+            <div class="val">${d.hourly.enabled ? (d.hourly.running ? 'Executando agora' : 'Ligado') : 'Desligado'}</div>
+            <div class="val small">Última: ${d.hourly.lastRun ? fmt(d.hourly.lastRun) : 'nunca'}</div>
+          </div>
+        </div>
+        <div class="health-pill">
+          <div class="ico ${d.nightly.enabled?'green':'red'}">🌙</div>
+          <div class="info">
+            <div class="lbl">Cron Noturno (3h)</div>
+            <div class="val">${d.nightly.enabled ? (d.nightly.running ? 'Executando agora' : 'Ligado') : 'Desligado'}</div>
+            <div class="val small">Última: ${d.nightly.lastRun ? fmt(d.nightly.lastRun) : 'nunca'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch {}
+}
+async function toggleCron(type) {
+  await fetch(`/api/cron/${type}/toggle`, { method: 'POST' });
+  toast(`Cron ${type} alternado`, 'success');
+  await loadCronStatus();
+}
+async function runCronNow(type) {
+  if (!confirm(`Rodar cron ${type} AGORA pra todos clientes?`)) return;
+  toast(`Cron ${type} iniciado`, 'success');
+  log(`▶ Disparando cron ${type} manualmente`, 'ok');
+  await fetch(`/api/cron/${type}/run-now`, { method: 'POST' });
+  setTimeout(() => { loadCronStatus(); loadClients(); }, 2000);
+}
+
+// ============== LOG STREAM ==============
+async function pollEvents() {
+  if (logPollActive) return;
+  logPollActive = true;
+  try {
+    const r = await fetch(`/api/events?since=${lastEventId}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.events && d.events.length) {
+      for (const ev of d.events) {
+        allLogEvents.push(ev);
+        lastEventId = Math.max(lastEventId, ev.id);
+      }
+      // Limita buffer
+      if (allLogEvents.length > 2000) allLogEvents.splice(0, allLogEvents.length - 2000);
+      renderLog();
+    } else if (d.lastId) {
+      lastEventId = Math.max(lastEventId, d.lastId);
+    }
+  } catch {} finally { logPollActive = false; }
+}
+
+function renderLog() {
+  const el = $('logContent');
+  const filter = $('logFilter')?.value.toLowerCase() || '';
+  const level = $('logLevelFilter')?.value || 'all';
+
+  const lines = [];
+  for (const ev of allLogEvents) {
+    const line = formatEvent(ev);
+    if (!line) continue;
+    if (filter && !line.text.toLowerCase().includes(filter)) continue;
+    if (level !== 'all' && line.cls !== level && !(level === 'ok' && line.cls === 'info')) continue;
+    lines.push(line.html);
+  }
+  el.innerHTML = lines.join('');
+  if (autoScroll) el.scrollTop = el.scrollHeight;
+}
+
+function formatEvent(ev) {
+  const t = new Date(ev.ts).toLocaleTimeString('pt-BR');
+  if (ev.type === 'helena_request') {
+    const status = ev.status || 0;
+    const cls = status >= 200 && status < 300 ? 'ok' : status === 429 ? 'warn' : status >= 400 || status === 0 ? 'err' : 'muted';
+    const att = ev.attempt > 1 ? ` (att ${ev.attempt})` : '';
+    const text = `→ ${ev.method} ${ev.path} ${status} ${ev.ms}ms${att}`;
+    return { cls, text, html: `<span class="log-line log-req"><span class="ts">[${t}]</span> <span class="muted">→ ${escapeHtml(ev.method)} ${escapeHtml(ev.path)}</span> <span class="${cls}"> ${status||'—'}</span> <span class="muted"> ${ev.ms}ms${att}</span></span>` };
+  }
+  if (ev.type === 'cron_start') return { cls: 'ok', text: `⏰ CRON ${ev.syncType.toUpperCase()} iniciado`, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="ok">⏰ CRON ${ev.syncType.toUpperCase()} iniciado</span></span>` };
+  if (ev.type === 'cron_clients_found') return { cls: 'info', text: `→ ${ev.count} cliente(s) ativos`, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="info">  → ${ev.count} cliente(s) ativos</span></span>` };
+  if (ev.type === 'client_skip') return { cls: 'warn', text: `⏭ pulando ${ev.name} (${ev.reason})`, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="warn">  ⏭ pulando ${escapeHtml(ev.name)} (${escapeHtml(ev.reason)})</span></span>` };
+  if (ev.type === 'client_sync_start') return { cls: 'info', text: `▶ ${ev.name}: ${ev.syncType}`, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="info">  ▶ ${escapeHtml(ev.name)}: ${escapeHtml(ev.syncType)}</span></span>` };
+  if (ev.type === 'client_sync_end') {
+    const cls = ev.status === 'success' ? 'ok' : 'err';
+    const text = ev.status === 'success' ? `✓ ${ev.name}: cards=${ev.cards} sessions=${ev.sessions} contacts=${ev.contacts}` : `✗ ${ev.name}: ${ev.error||''}`;
+    return { cls, text, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="${cls}">  ${text.replace(/[<>]/g,'')}</span></span>` };
+  }
+  if (ev.type === 'cron_end') return { cls: 'ok', text: `✓ CRON ${ev.syncType.toUpperCase()} finalizado`, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="ok">✓ CRON ${ev.syncType.toUpperCase()} finalizado</span></span>` };
+  if (ev.type === 'client_entered_cron') return { cls: 'ok', text: `🤖 ${ev.name} entrou no cron`, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="ok">🤖 ${escapeHtml(ev.name)} entrou no cron — agora gerenciado automaticamente</span></span>` };
+  if (ev.type === 'live_message') return { cls: 'info', text: `💬 webhook ${ev.direction}: ${ev.contentPreview}`, html: `<span class="log-line"><span class="ts">[${t}]</span> <span class="info">💬 webhook ${escapeHtml(ev.direction)}: ${escapeHtml(ev.contentPreview||'')}</span></span>` };
+  return null;
+}
+
+// Log manual (vindos do front)
+function log(msg, cls = 'info') {
+  // Push manual event so it appears in render
+  const ev = { id: 'manual-' + Date.now() + Math.random(), ts: Date.now(), type: 'manual', cls, message: msg };
+  allLogEvents.push(ev);
+  // Add inline render for manual events
+  const t = new Date(ev.ts).toLocaleTimeString('pt-BR');
+  const el = $('logContent');
+  if (el) {
+    el.innerHTML += `<span class="log-line"><span class="ts">[${t}]</span> <span class="${cls}">${escapeHtml(msg)}</span></span>`;
+    if (autoScroll) el.scrollTop = el.scrollHeight;
+  }
+}
+
+function clearLog() { allLogEvents = []; $('logContent').innerHTML = ''; toast('Log limpo', 'success'); }
+function toggleReqDisplay() {
+  const c = $('logContent');
+  const hidden = c.classList.toggle('hide-requests');
+  $('toggleReqBtn').textContent = hidden ? '👁 Mostrar Requests' : '👁 Esconder Requests';
+}
+function toggleAutoScroll() {
+  autoScroll = !autoScroll;
+  $('autoScrollBtn').textContent = autoScroll ? '📌 Auto-scroll: ON' : '📌 Auto-scroll: OFF';
+}
+function exportLog() {
+  const lines = allLogEvents.map(ev => `[${new Date(ev.ts).toISOString()}] ${JSON.stringify(ev)}`).join('\n');
+  const blob = new Blob([lines], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `helena-log-${Date.now()}.txt`; a.click();
+  toast('Log exportado ✓', 'success');
+}
+
+// ============== HISTÓRICO ==============
+async function loadSyncHistory() {
+  try {
+    const r = await fetch('/api/sync-log?limit=50'); const d = await r.json();
+    const logs = d.logs || [];
+    if (!logs.length) { $('historyContent').innerHTML = '<div class="empty">Sem histórico ainda</div>'; return; }
+    $('historyContent').innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Quando</th><th>Cliente</th><th>Tipo</th><th>Status</th><th>Cards</th><th>Sessions</th><th>Contacts</th><th>Duração</th><th>Erro</th></tr>
+        </thead>
+        <tbody>${logs.map(l => `
+          <tr>
+            <td>${fmt(l.started_at)}<br><span style="font-size:10px;color:var(--text-muted);">${timeAgo(l.started_at)}</span></td>
+            <td><strong>${escapeHtml(l.client_name||'?')}</strong></td>
+            <td><span class="badge info">${escapeHtml(l.sync_type)}</span></td>
+            <td><span class="badge ${l.status==='success'?'success':l.status==='running'?'warn':'danger'}">${escapeHtml(l.status||'?')}</span></td>
+            <td>${l.cards_synced||0}</td>
+            <td>${l.sessions_synced||0}</td>
+            <td>${l.contacts_synced||0}</td>
+            <td>${l.duration_ms ? Math.round(l.duration_ms/1000)+'s' : '—'}</td>
+            <td style="color:var(--red);font-size:10px;">${escapeHtml((l.error_message||'').slice(0,50))}</td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    `;
+  } catch (e) { $('historyContent').innerHTML = `<div class="empty">Erro: ${escapeHtml(e.message)}</div>`; }
+}
+
+// ============== DIAGNOSTICS ==============
+async function testEndpoint(url, method) {
+  $('diagnosticOutput').textContent = `Testando ${method} ${url}...`;
+  try {
+    const r = await fetch(url, { method });
+    const text = await r.text();
+    let pretty;
+    try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch { pretty = text; }
+    $('diagnosticOutput').textContent = `Status: ${r.status} ${r.statusText}\n\n${pretty}`;
+  } catch (e) { $('diagnosticOutput').textContent = `ERRO: ${e.message}`; }
+}
+async function testWebhook() {
+  const sample = { companyId: '0d479da2-4dcb-4e3c-acaa-a84d4afd03cd', sessionId: 'test-' + Date.now(), contactId: 'test-contact', content: 'Mensagem de teste do diagnóstico', direction: 'in' };
+  $('diagnosticOutput').textContent = `Enviando webhook simulado...\n\nPayload: ${JSON.stringify(sample, null, 2)}\n\nResposta:`;
+  try {
+    const r = await fetch('/api/webhooks/helena', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sample) });
+    const j = await r.json();
+    $('diagnosticOutput').textContent += `\n${JSON.stringify(j, null, 2)}`;
+  } catch (e) { $('diagnosticOutput').textContent += '\nERRO: ' + e.message; }
+}
+async function testNotificationConfig() {
+  if (!clients.length) return toast('Carrega clientes primeiro', 'error');
+  $('diagnosticOutput').textContent = 'Testando notificação pro primeiro cliente...';
+  try {
+    const r = await fetch('/api/notifications/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: clients[0].id }) });
+    const j = await r.json();
+    $('diagnosticOutput').textContent = JSON.stringify(j, null, 2);
+  } catch (e) { $('diagnosticOutput').textContent = 'ERRO: ' + e.message; }
+}
+function copyApiUrls() {
+  const urls = [
+    'GET  /api/health',
+    'GET  /api/clients',
+    'GET  /api/cron/status',
+    'POST /api/cron/hourly/toggle',
+    'POST /api/cron/nightly/toggle',
+    'POST /api/sync-cards     {clientId}',
+    'POST /api/sync-sessions  {clientId, limit}',
+    'POST /api/sync-contacts  {clientId, limit}',
+    'POST /api/sync-cascade-full {clientId}',
+    'POST /api/webhooks/helena',
+    'POST /api/notifications/test {clientId}',
+    'GET  /api/events?since=N',
+    'GET  /api/sync-log?limit=N',
+  ].join('\n');
+  navigator.clipboard.writeText(urls).then(() => toast('URLs copiadas ✓', 'success'));
+}
+
+async function cleanStaleLocks() {
+  if (!confirm('Liberar locks travados de todos clientes?')) return;
+  log('🧹 Liberando locks travados...', 'warn');
+  // Faz isso via PATCH dos clientes
+  try {
+    for (const c of clients.filter(c => c.lockedFor > 0 || c.sync_status === 'running_full' || c.sync_status === 'running_hourly')) {
+      await fetch(`/api/admin/clients/${c.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sync_status: 'idle', sync_lock_until: null })
+      });
+    }
+    toast('Locks liberados ✓', 'success');
+    await loadClients();
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+// ============== INIT ==============
+async function loadAll() {
+  await Promise.all([loadHealth(), loadClients(), loadCronStatus()]);
+  loadActivityChart();
+}
+loadAll();
+setInterval(loadHealth, 10000);
+setInterval(loadClients, 15000);
+setInterval(loadCronStatus, 8000);
+setInterval(pollEvents, 2000);
+
+// Inicializa last event id
+fetch('/api/events?since=999999999').then(r => r.json()).then(d => { lastEventId = d.lastId || 0; }).catch(()=>{});
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 134 80% 42%;
+    --primary-foreground: 0 0% 100%;
+    /* Paleta oficial LawChat */
+    --lawchat-light: 125 47% 69%;  /* #8ED393 */
+    --lawchat-dark: 134 80% 42%;   /* #15BF41 */
+
+    --secondary: 134 40% 92%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 134 50% 75%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 134 100% 37%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 134 100% 37%;
+
+    /* Funnel colors - varied palette */
+    --funnel-1: 217 91% 50%;
+    --funnel-2: 187 85% 40%;
+    --funnel-3: 32 95% 48%;
+    --funnel-4: 134 60% 42%;
+    --funnel-5: 43 96% 56%;
+    --funnel-6: 0 84% 60%;
+
+    /* KPI accent colors */
+    --kpi-blue: 217 91% 50%;
+    --kpi-emerald: 142 76% 36%;
+    --kpi-amber: 32 95% 48%;
+    --kpi-violet: 263 70% 58%;
+    --kpi-cyan: 187 85% 40%;
+    --kpi-rose: 350 80% 55%;
+    --kpi-indigo: 245 58% 51%;
+
+    /* Conversion card colors */
+    --conv-1: 217 91% 60%;
+    --conv-2: 187 72% 45%;
+    --conv-3: 32 95% 52%;
+    --conv-4: 134 60% 42%;
+  }
+
+  .dark {
+    --background: 210 30% 8%;
+    --foreground: 0 0% 92%;
+    --card: 210 28% 11%;
+    --card-foreground: 0 0% 92%;
+    --popover: 210 28% 11%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 142 100% 37%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 25% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 210 25% 15%;
+    --muted-foreground: 210 10% 55%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 65%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 37 90% 55%;
+    --warning-foreground: 0 0% 100%;
+    --border: 210 20% 18%;
+    --input: 210 20% 18%;
+    --ring: 142 100% 37%;
+    --radius: 0.625rem;
+    --sidebar-background: 210 30% 8%;
+    --sidebar-foreground: 0 0% 70%;
+    --sidebar-primary: 0 0% 92%;
+    --sidebar-primary-foreground: 210 30% 8%;
+    --sidebar-accent: 210 25% 15%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 210 20% 18%;
+    --sidebar-ring: 142 100% 37%;
+    --funnel-1: 217 91% 60%;
+    --funnel-2: 187 85% 50%;
+    --funnel-3: 32 95% 58%;
+    --funnel-4: 134 60% 50%;
+    --funnel-5: 43 96% 62%;
+    --funnel-6: 0 84% 65%;
+    --kpi-blue: 217 91% 60%;
+    --kpi-emerald: 142 76% 46%;
+    --kpi-amber: 32 95% 58%;
+    --kpi-violet: 263 70% 65%;
+    --kpi-cyan: 187 85% 50%;
+    --kpi-rose: 350 80% 62%;
+    --kpi-indigo: 245 58% 60%;
+    --conv-1: 217 91% 65%;
+    --conv-2: 187 72% 55%;
+    --conv-3: 32 95% 58%;
+    --conv-4: 134 60% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .shadow-card-hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.06);
+  }
+  .dark .shadow-card {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .dark .shadow-card-hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  /* ===== Botão oficial LawChat (gradiente + shimmer) ===== */
+  .btn-lawchat {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #8ED393 0%, #15BF41 100%);
+    background-size: 180% 180%;
+    background-position: 0% 50%;
+    color: #fff;
+    box-shadow: 0 4px 12px -6px rgba(21, 191, 65, 0.32);
+    transition: background-position .5s ease, transform .25s ease, box-shadow .3s ease;
+  }
+  .btn-lawchat:hover {
+    background-position: 100% 50%;
+    transform: translateY(-1px);
+    box-shadow: 0 7px 16px -7px rgba(21, 191, 65, 0.4);
+  }
+  .btn-lawchat:active {
+    transform: translateY(0);
+  }
+  /* faixa de brilho que atravessa no hover */
+  .btn-lawchat::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%);
+    transform: translateX(-130%);
+    transition: transform .8s ease;
+  }
+  .btn-lawchat:hover::after {
+    transform: translateX(130%);
+  }
+  .btn-lawchat:disabled {
+    opacity: .6;
+    transform: none;
+    cursor: not-allowed;
+  }
+
+  /* Outline lawchat (botões secundários) */
+  .btn-lawchat-outline {
+    border: 1.5px solid hsl(var(--lawchat-dark));
+    color: hsl(var(--lawchat-dark));
+    background: transparent;
+    transition: background .25s ease, color .25s ease, transform .2s ease;
+  }
+  .btn-lawchat-outline:hover {
+    background: hsl(var(--lawchat-dark) / 0.08);
+    transform: translateY(-1px);
+  }
+
+  /* Texto/símbolo em gradiente lawchat */
+  .text-lawchat-gradient {
+    background: linear-gradient(135deg, #8ED393, #15BF41);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Item de navegação ativo (sidebar) com cor lawchat */
+  .active-nav {
+    background: linear-gradient(90deg, rgba(142,211,147,0.16), rgba(21,191,65,0.05)) !important;
+  }
+  .active-nav .icon-wrap {
+    background: linear-gradient(135deg, #8ED393, #15BF41) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 10px -2px rgba(21,191,65,0.4) !important;
+  }
+  .dark .active-nav {
+    background: linear-gradient(90deg, rgba(142,211,147,0.14), rgba(21,191,65,0.04)) !important;
+  }
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    transform: scale(0.65);
+    transform-origin: top left;
+    width: 153%;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  header {
+    position: static !important;
+  }
+  main {
+    min-width: 1200px !important;
+    width: 1200px !important;
+  }
+  .grid {
+    display: grid !important;
+  }
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  .md\:grid-cols-2,
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .md\:grid-cols-3,
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .md\:grid-cols-4,
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  .md\:grid-cols-5,
+  .lg\:grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+  .md\:grid-cols-6,
+  .lg\:grid-cols-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+}
