@@ -90,7 +90,7 @@ const AdminSync = () => {
     { label: 'Banco', value: stats?.db || '...', icon: Database, ok: stats?.db?.startsWith('OK') },
     { label: 'Cron Horário', value: stats?.cronHourly ? 'Ligado' : 'Desligado', icon: Clock, ok: stats?.cronHourly },
     { label: 'Cron Noturno', value: stats?.cronNightly ? 'Ligado' : 'Desligado', icon: Moon, ok: stats?.cronNightly },
-    { label: 'Server', value: 'localhost:8787', icon: Server, ok: true },
+    { label: 'Server', value: typeof window !== 'undefined' ? window.location.host : '—', icon: Server, ok: true },
     { label: 'Eventos', value: String(events.length), icon: Zap, ok: true },
   ];
 
