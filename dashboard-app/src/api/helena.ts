@@ -154,8 +154,12 @@ export async function fetchCardsFromDB(
       break;
     }
     if (!data || data.length === 0) break;
-    if (syncedAt === null) syncedAt = data[0]?.synced_at || null;
-    for (const row of data) cards.push(mapCardRow(row));
+    // "Última atualização" = a sincronização MAIS RECENTE (MAX synced_at), não o
+    // primeiro card da página (que é o de menor id = o mais antigo → mostrava horas erradas).
+    for (const row of data) {
+      if (row.synced_at && (syncedAt === null || row.synced_at > syncedAt)) syncedAt = row.synced_at;
+      cards.push(mapCardRow(row));
+    }
     lastId = data[data.length - 1].id;
     page++;
     const isLast = data.length < pageSize;

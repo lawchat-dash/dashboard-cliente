@@ -2325,11 +2325,9 @@ pool.query("SELECT 1").then(() => ensureSchema()).then(async () => {
   // null para a janela das 3h de hoje ainda rodar normalmente.
   cronState.lastNightlyKey = new Date().getHours() >= 3 ? dayKey(new Date()) : null;
 
-  // Horário: NÃO dispara no boot. O sync de boot competia com o carregamento
-  // inicial do dashboard (martelava o Postgres → o front travava numa página só,
-  // ex.: 1.000). Marcamos a hora atual como "feita" → a 1ª sync roda no próximo
-  // início de hora. A frescura ao abrir o dashboard já vem do /api/sync-on-mount
-  // (incremental leve, stopAfterKnown) — sem contenção pesada.
+  // Horário: o tick regular NÃO dispara no boot (marcamos a hora atual como
+  // "feita") pra não competir com a subida. Mas, pra garantir frescura após
+  // QUALQUER deploy/restart, agendamos UM resync leve ~90s depois (ver abaixo).
   cronState.lastHourlyKey = hourKey(new Date());
 
   console.log("");
@@ -2348,6 +2346,17 @@ pool.query("SELECT 1").then(() => ensureSchema()).then(async () => {
   console.log("  ╚════════════════════════════════════════════════╝");
   console.log("");
   server.listen(PORT);
+
+  // Resync ÚNICO ~90s após o boot: garante dados frescos depois de qualquer
+  // deploy/restart sem competir com a subida (o dashboard lê do Supabase REST,
+  // não deste pool). Não duplica: safeRunCron tem guard (hourlyRunning) e o tick
+  // regular já considera a hora atual "feita". Roda 1x; a próxima é no fim da hora.
+  setTimeout(() => {
+    if (cronState.hourlyEnabled && !cronState.hourlyRunning) {
+      console.log("⏳ Resync pós-boot (hourly leve)...");
+      safeRunCron("hourly").catch((e) => console.error("Resync pós-boot err:", e));
+    }
+  }, 90_000);
 }).catch((e) => {
   console.error("❌ Erro conectando ao DB:", e.message);
   console.error("Verifica DB_HOST/DB_USER/DB_PASS no .env");
