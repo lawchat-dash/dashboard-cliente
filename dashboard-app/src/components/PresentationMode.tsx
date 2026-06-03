@@ -6,7 +6,7 @@ import AnimatedCounter from '@/components/AnimatedCounter';
 import {
   MonitorPlay, X, Users, FileCheck, Percent, TrendingUp, TrendingDown, UserCheck, Search,
   FileText, PenLine, Trophy, Check, UserPlus, UserX, Megaphone, Clock, CalendarDays,
-  Sparkles, Target, ChevronRight, Activity, Radio,
+  Sparkles, Target, ChevronRight, Activity, Radio, AlertTriangle,
 } from 'lucide-react';
 
 interface PresentationModeProps {
@@ -83,11 +83,48 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
+// KPI card premium: glassmorphism + glow que segue o cursor + hover 3D.
+const KpiCard = ({ k, i }: { k: any; i: number }) => {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const up = k.delta >= 0;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={{ delay: i * 0.08, duration: 0.5 }}
+      whileHover={{ y: -8, scale: 1.02 }}
+      onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setPos({ x: e.clientX - r.left, y: e.clientY - r.top }); }}
+      onMouseLeave={() => setPos(null)}
+      className="group relative overflow-hidden rounded-3xl border bg-white/70 backdrop-blur-xl p-5 shadow-[0_10px_36px_rgba(15,23,42,0.06)] transition-shadow hover:shadow-[0_28px_70px_-22px_rgba(15,23,42,0.20)]"
+      style={{ borderColor: `${k.color}2e` }}
+    >
+      {pos && <div className="pointer-events-none absolute h-44 w-44 rounded-full blur-2xl" style={{ left: pos.x - 88, top: pos.y - 88, background: `radial-gradient(circle, ${k.color}24, transparent 70%)` }} />}
+      <div className="absolute -top-16 -right-16 h-36 w-36 rounded-full blur-3xl" style={{ background: `${k.color}14` }} />
+      <div className="relative flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `${k.color}22`, border: `1px solid ${k.color}44` }}><k.icon className="h-4 w-4" style={{ color: k.color }} /></div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{k.label}</span>
+          </div>
+          <p className="text-[44px] leading-none font-extrabold tracking-tight tabular-nums" style={{ color: k.color }}>
+            <AnimatedCounter value={k.value} decimals={k.decimals} suffix={k.suffix || ''} duration={1500} />
+          </p>
+          <p className={`mt-2 flex items-center gap-1 text-[11px] font-semibold ${up ? 'text-emerald-600' : 'text-red-500'}`}>
+            {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {up ? '↑' : '↓'} {Math.abs(k.delta).toFixed(1)}{k.pp ? ' p.p.' : '%'} <span className="font-normal text-slate-400">vs período anterior</span>
+          </p>
+        </div>
+        <div className="mt-1"><Spark data={k.spark} color={k.color} /></div>
+      </div>
+    </motion.div>
+  );
+};
+
 // IMPORTANTE: definido FORA do componente. Se ficasse dentro, cada render (o relógio
 // re-renderiza a cada 1s) criaria um novo tipo de componente → React remontava TODOS
 // os painéis a cada segundo → animações/contadores reiniciavam sem parar (o "loop").
 const Panel = ({ title, icon: Icon, iconColor, right, children, className = '' }: any) => (
-  <div className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)] ${className}`}>
+  <div className={`relative rounded-2xl border border-white/70 bg-white/60 backdrop-blur-2xl p-4 shadow-[0_8px_36px_rgba(15,23,42,0.07)] ${className}`}>
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
         {Icon && <Icon className="h-4 w-4" style={{ color: iconColor }} />}
@@ -191,6 +228,38 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
       .forEach(c => feed.push({ t: new Date(c.updatedAt).getTime(), type: 'red', icon: UserX, title: 'Lead desqualificado', sub: nameOf(c) }));
     const feedSorted = feed.sort((a, b) => b.t - a.t).slice(0, 6);
 
+    // ─────────── IA: gargalo, previsão, melhor origem (tudo dos dados reais) ───────────
+    // Alcance cumulativo por etapa (quem chegou ÀquELA etapa ou além) → conversão real.
+    const cumReach = FUNNEL.map((_, i) => FUNNEL.slice(i).reduce((a, f) => a + (stageCounts[f.key] || 0), 0));
+    const stageConv = FUNNEL.map((_, i) => (i === 0 ? 100 : cumReach[i - 1] > 0 ? (cumReach[i] / cumReach[i - 1]) * 100 : 0));
+    // Gargalo = transição com a PIOR conversão (onde mais leads "travam"), com volume mínimo.
+    let bnIdx = -1, bnWorst = 101;
+    for (let i = 1; i < FUNNEL.length; i++) { if (cumReach[i - 1] >= 20 && stageConv[i] < bnWorst) { bnWorst = stageConv[i]; bnIdx = i; } }
+    const bottleneck = bnIdx >= 1 ? { stage: FUNNEL[bnIdx - 1].label, conv: Math.round(bnWorst), stuck: stageCounts[FUNNEL[bnIdx - 1].key] || 0 } : null;
+
+    // Previsão: ritmo de fechamento dos últimos 7d projetado p/ ~5 dias úteis.
+    const closed7 = cnt(closedTimes, now - 7 * DAY, now + DAY);
+    const predict = Math.max(0, Math.round((closed7 / 7) * 5));
+
+    // Melhor origem por CONVERSÃO (lead→contrato), dedup por card, volume mínimo.
+    const closedIds = new Set(closedCards.map(c => c.id));
+    const sld: Record<string, number> = {}, scl: Record<string, number> = {}, seenC = new Set<string>();
+    sessions.forEach(s => {
+      if (!s.cardId || seenC.has(s.cardId)) return;
+      if (s.utmSource && (s.utmSourceId || s.utmCampaign)) {
+        seenC.add(s.cardId);
+        const k = classifySource(s.utmSource);
+        sld[k] = (sld[k] || 0) + 1;
+        if (closedIds.has(s.cardId)) scl[k] = (scl[k] || 0) + 1;
+      }
+    });
+    const srcConvByName: Record<string, number> = {};
+    Object.keys(sld).forEach(k => { srcConvByName[k] = sld[k] > 0 ? ((scl[k] || 0) / sld[k]) * 100 : 0; });
+    let bestSrc: string | null = null, bestCv = 0;
+    Object.keys(sld).forEach(k => { if (sld[k] >= 30) { const cv = (scl[k] || 0) / sld[k]; if (cv > bestCv) { bestCv = cv; bestSrc = k; } } });
+    const overallCv = total ? closed / total : 0;
+    const bestSrcLift = bestSrc && overallCv > 0 ? Math.round((bestCv / overallCv - 1) * 100) : 0;
+
     return {
       total, closed, conv, neg,
       kpis: [
@@ -203,6 +272,7 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
       donutSegs, donutTotal, topSources, srcTotal,
       bestWd, peakHr, hrPct, goalPct, closedMonth, goal, convDeltaPP: convCur - convPrev,
       feed: feedSorted,
+      stageConv, bottleneck, predict, bestSrc, bestSrcLift, srcConvByName,
     };
   }, [cards, sessions, classify]);
 
@@ -243,9 +313,14 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
-      {/* fundo — grid sutil ESTÁTICO (nada se mexe; limpo no branco) */}
+      {/* fundo premium — profundidade por glows ESTÁTICOS (não se mexem) +
+          grid fino + granulado sutil; é o que faz o glassmorphism "aparecer". */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(15,23,42,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.025) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+        <div className="absolute -top-40 -left-32 h-[46vh] w-[46vh] rounded-full blur-[150px]" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.14), transparent 70%)' }} />
+        <div className="absolute top-1/4 -right-32 h-[44vh] w-[44vh] rounded-full blur-[150px]" style={{ background: 'radial-gradient(circle, rgba(16,191,65,0.12), transparent 70%)' }} />
+        <div className="absolute -bottom-40 left-1/3 h-[42vh] w-[42vh] rounded-full blur-[150px]" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.10), transparent 70%)' }} />
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(15,23,42,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.02) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+        <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
       </div>
 
       {/* header */}
@@ -274,31 +349,7 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
       <div className="relative flex-1 overflow-y-auto px-7 py-5 space-y-4">
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {d.kpis.map((k, i) => {
-            const up = k.delta >= 0;
-            return (
-              <motion.div key={k.label} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
-                <div className="absolute -top-16 -right-16 h-36 w-36 rounded-full blur-3xl" style={{ background: `${k.color}12` }} />
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `${k.color}22`, border: `1px solid ${k.color}44` }}><k.icon className="h-4 w-4" style={{ color: k.color }} /></div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{k.label}</span>
-                    </div>
-                    <p className="text-[44px] leading-none font-extrabold tracking-tight tabular-nums" style={{ color: k.color }}>
-                      <AnimatedCounter value={k.value} decimals={k.decimals} suffix={(k as any).suffix || ''} duration={1500} />
-                    </p>
-                    <p className={`mt-2 flex items-center gap-1 text-[11px] font-semibold ${up ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                      {up ? '↑' : '↓'} {Math.abs(k.delta).toFixed(1)}{(k as any).pp ? ' p.p.' : '%'} <span className="font-normal text-slate-400">vs período anterior</span>
-                    </p>
-                  </div>
-                  <div className="mt-1"><Spark data={k.spark} color={k.color} /></div>
-                </div>
-              </motion.div>
-            );
-          })}
+          {d.kpis.map((k, i) => <KpiCard key={k.label} k={k} i={i} />)}
         </div>
 
         {/* Funil (2/3) + Atividade (1/3) */}
@@ -307,25 +358,60 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
             <div className="flex items-stretch gap-1 overflow-x-auto pb-1">
               {d.funnel.map((f, i) => {
                 const up = f.trend >= 0;
+                const isBn = d.bottleneck && f.label === d.bottleneck.stage;
+                const convNext = d.stageConv[i + 1];
                 return (
                   <div key={f.key} className="flex items-center gap-1 flex-1 min-w-0">
                     <motion.div initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ delay: i * 0.09 }}
-                      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-3 text-center min-w-[92px]">
-                      <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: `${f.color}14`, border: `1px solid ${f.color}33`, boxShadow: `0 4px 12px -5px ${f.color}66` }}>
+                      whileHover={{ y: -4 }}
+                      className="group relative flex-1 rounded-xl border bg-white/70 px-2.5 py-3 text-center min-w-[92px] transition-shadow hover:shadow-md"
+                      style={{ borderColor: isBn ? '#f59e0b' : 'rgb(226 232 240)', boxShadow: isBn ? '0 0 0 1px rgba(245,158,11,0.4), 0 10px 26px -10px rgba(245,158,11,0.55)' : undefined }}>
+                      {isBn && <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow">Gargalo</span>}
+                      <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg transition-transform group-hover:scale-110" style={{ background: `${f.color}14`, border: `1px solid ${f.color}33`, boxShadow: `0 4px 12px -5px ${f.color}66` }}>
                         <f.icon className="h-4 w-4" style={{ color: f.color }} />
                       </div>
                       <p className="text-[10px] text-slate-500 truncate">{f.label}</p>
                       <p className="text-xl font-bold tabular-nums leading-tight" style={{ color: f.color }}>{f.count.toLocaleString('pt-BR')}</p>
                       <p className={`text-[10px] font-medium ${up ? 'text-emerald-600' : 'text-red-500'}`}>{up ? '↑' : '↓'} {Math.abs(f.trend).toFixed(1)}%</p>
                     </motion.div>
-                    {i < d.funnel.length - 1 && <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />}
+                    {i < d.funnel.length - 1 && (
+                      <div className="flex flex-col items-center shrink-0 px-0.5">
+                        <ChevronRight className="h-4 w-4 text-slate-300" />
+                        {convNext != null && <span className="text-[8px] font-semibold tabular-nums text-slate-400">{Math.round(convNext)}%</span>}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 p-2.5">
-              <Sparkles className="h-3.5 w-3.5 text-blue-600 mt-0.5 shrink-0" />
-              <p className="text-[11px] text-slate-600 leading-snug">Leads que chegam em <strong className="text-slate-700">Aguardando Assinatura</strong> têm alta probabilidade de fechamento — {d.funnel[4]?.count || 0} aguardando agora.</p>
+            {/* IA do funil: gargalo, previsão e melhor origem — calculados dos dados */}
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {d.bottleneck ? (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 p-2.5">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-slate-600 leading-snug">Gargalo em <strong className="text-slate-800">{d.bottleneck.stage}</strong> — só {d.bottleneck.conv}% avançam ({d.bottleneck.stuck.toLocaleString('pt-BR')} parados).</p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-slate-600 leading-snug">Funil saudável, sem gargalo crítico no momento.</p>
+                </div>
+              )}
+              <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50/70 p-2.5">
+                <TrendingUp className="h-3.5 w-3.5 text-blue-600 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-slate-600 leading-snug">Previsão: <strong className="text-slate-800">+{d.predict} contratos</strong> nos próximos dias úteis.</p>
+              </div>
+              {d.bestSrc && d.bestSrcLift > 0 ? (
+                <div className="flex items-start gap-2 rounded-xl border border-violet-200 bg-violet-50/70 p-2.5">
+                  <Sparkles className="h-3.5 w-3.5 text-violet-600 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-slate-600 leading-snug">Leads de <strong className="text-slate-800">{d.bestSrc}</strong> convertem <strong className="text-slate-800">{d.bestSrcLift}%</strong> melhor que a média.</p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
+                  <Sparkles className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-slate-500 leading-snug">Analisando conversão por origem…</p>
+                </div>
+              )}
             </div>
           </Panel>
 
