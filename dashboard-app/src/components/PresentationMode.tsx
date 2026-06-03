@@ -77,7 +77,7 @@ function Spark({ data, color }: { data: number[]; color: string }) {
       <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.35" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
       <path d={fill} fill={`url(#${gid})`} />
       <motion.path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round"
-        style={{ filter: `drop-shadow(0 0 4px ${color}88)` }}
+        style={{ filter: `drop-shadow(0 1px 2px ${color}44)` }}
         initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.2, ease: 'easeOut' }} />
     </svg>
   );
@@ -243,12 +243,9 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
-      {/* fundo — washes de cor bem suaves (clean, sem poluir o branco) */}
+      {/* fundo — grid sutil ESTÁTICO (nada se mexe; limpo no branco) */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div className="absolute -top-1/4 left-0 h-[60vh] w-[60vh] rounded-full blur-[170px]" style={{ background: 'radial-gradient(circle,rgba(59,130,246,0.10),transparent 70%)' }} animate={{ x: [0, 70, 0], y: [0, 40, 0] }} transition={{ duration: 18, repeat: Infinity }} />
-        <motion.div className="absolute top-1/4 right-0 h-[55vh] w-[55vh] rounded-full blur-[170px]" style={{ background: 'radial-gradient(circle,rgba(34,197,94,0.09),transparent 70%)' }} animate={{ x: [0, -60, 0], y: [0, -30, 0] }} transition={{ duration: 22, repeat: Infinity }} />
-        <motion.div className="absolute -bottom-1/4 left-1/3 h-[50vh] w-[50vh] rounded-full blur-[170px]" style={{ background: 'radial-gradient(circle,rgba(168,85,247,0.07),transparent 70%)' }} animate={{ x: [0, 40, 0] }} transition={{ duration: 20, repeat: Infinity }} />
-        <div className="absolute inset-0 opacity-[0.5]" style={{ backgroundImage: 'linear-gradient(rgba(15,23,42,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.04) 1px,transparent 1px)', backgroundSize: '56px 56px' }} />
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(15,23,42,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.025) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
       </div>
 
       {/* header */}
@@ -281,9 +278,8 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
             const up = k.delta >= 0;
             return (
               <motion.div key={k.label} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                className="group relative overflow-hidden rounded-3xl border bg-white p-5" style={{ borderColor: `${k.color}33`, boxShadow: `0 12px 32px -16px ${k.color}55, 0 1px 3px rgba(15,23,42,0.06)` }}>
-                <div className="absolute -top-14 -right-14 h-36 w-36 rounded-full blur-3xl" style={{ background: `${k.color}14` }} />
-                <div className="absolute inset-x-0 top-0 h-1 rounded-t-3xl" style={{ background: `linear-gradient(90deg, transparent, ${k.color}, transparent)`, opacity: 0.5 }} />
+                className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+                <div className="absolute -top-16 -right-16 h-36 w-36 rounded-full blur-3xl" style={{ background: `${k.color}12` }} />
                 <div className="relative flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
@@ -360,7 +356,7 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
               <svg ref={svgRef} viewBox={`0 0 ${chart.W} ${chart.H}`} className="w-full" style={{ height: 150, cursor: 'crosshair' }} onMouseMove={handleMove} onMouseLeave={() => setHoverIdx(null)}>
                 <defs><linearGradient id="evo-noc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity="0.32" /><stop offset="100%" stopColor="#3b82f6" stopOpacity="0" /></linearGradient></defs>
                 <path d={chart.fill} fill="url(#evo-noc)" />
-                <motion.path d={chart.line} fill="none" stroke="#3b82f6" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 6px rgba(59,130,246,.5))' }} initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.6, ease: 'easeInOut' }} />
+                <motion.path d={chart.line} fill="none" stroke="#3b82f6" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 1px 3px rgba(59,130,246,.3))' }} initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.6, ease: 'easeInOut' }} />
                 {hoverIdx != null && hov != null && (<g><line x1={chart.x(hoverIdx)} y1={chart.padT} x2={chart.x(hoverIdx)} y2={chart.H - chart.padB} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} /><circle cx={chart.x(hoverIdx)} cy={chart.y(hov)} r={4} fill="#3b82f6" stroke="#fff" strokeWidth={1.5} /></g>)}
               </svg>
               {hoverIdx != null && hov != null && (
@@ -402,7 +398,7 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
                   <motion.div key={name} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-center gap-2.5">
                     <span className="w-4 text-[11px] font-bold text-slate-400">{i + 1}</span>
                     <span className="w-24 text-[11px] text-slate-700 truncate shrink-0">{name}</span>
-                    <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><motion.div className="h-full rounded-full bg-gradient-to-r from-blue-500/70 to-blue-400" style={{ boxShadow: '0 0 8px rgba(59,130,246,.6)' }} initial={{ width: 0 }} animate={{ width: `${(v / (d.topSources[0][1] || 1)) * 100}%` }} transition={{ duration: 0.9, delay: 0.1 + i * 0.08 }} /></div>
+                    <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><motion.div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400" initial={{ width: 0 }} animate={{ width: `${(v / (d.topSources[0][1] || 1)) * 100}%` }} transition={{ duration: 0.9, delay: 0.1 + i * 0.08 }} /></div>
                     <span className="text-[11px] font-semibold tabular-nums text-slate-800 w-12 text-right">{v.toLocaleString('pt-BR')}</span>
                     <span className="text-[10px] tabular-nums text-slate-400 w-10 text-right">{((v / d.srcTotal) * 100).toFixed(1)}%</span>
                   </motion.div>
