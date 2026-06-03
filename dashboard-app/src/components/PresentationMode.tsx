@@ -233,8 +233,10 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
     const cumReach = FUNNEL.map((_, i) => FUNNEL.slice(i).reduce((a, f) => a + (stageCounts[f.key] || 0), 0));
     const stageConv = FUNNEL.map((_, i) => (i === 0 ? 100 : cumReach[i - 1] > 0 ? (cumReach[i] / cumReach[i - 1]) * 100 : 0));
     // Gargalo = transição com a PIOR conversão (onde mais leads "travam"), com volume mínimo.
+    // Começa em i=2: o SDR (topo do funil) é sempre o maior por natureza, então a
+    // transição SDR→Closer não conta como "gargalo" (não seria acionável).
     let bnIdx = -1, bnWorst = 101;
-    for (let i = 1; i < FUNNEL.length; i++) { if (cumReach[i - 1] >= 20 && stageConv[i] < bnWorst) { bnWorst = stageConv[i]; bnIdx = i; } }
+    for (let i = 2; i < FUNNEL.length; i++) { if (cumReach[i - 1] >= 20 && stageConv[i] < bnWorst) { bnWorst = stageConv[i]; bnIdx = i; } }
     const bottleneck = bnIdx >= 1 ? { stage: FUNNEL[bnIdx - 1].label, conv: Math.round(bnWorst), stuck: stageCounts[FUNNEL[bnIdx - 1].key] || 0 } : null;
 
     // Previsão: ritmo de fechamento dos últimos 7d projetado p/ ~5 dias úteis.
@@ -354,7 +356,7 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
         {/* Funil (2/3) + Atividade (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Panel title="Fluxo do Funil" icon={Activity} iconColor="#3b82f6" className="lg:col-span-2">
-            <div className="flex items-stretch gap-1 overflow-x-auto pb-1">
+            <div className="flex items-stretch gap-1 overflow-x-auto px-1 pt-4 pb-2">
               {d.funnel.map((f, i) => {
                 const up = f.trend >= 0;
                 const isBn = d.bottleneck && f.label === d.bottleneck.stage;
