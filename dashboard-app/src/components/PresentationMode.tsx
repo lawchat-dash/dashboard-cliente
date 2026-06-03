@@ -319,7 +319,6 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
         <div className="absolute -top-40 -left-32 h-[46vh] w-[46vh] rounded-full blur-[150px]" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.14), transparent 70%)' }} />
         <div className="absolute top-1/4 -right-32 h-[44vh] w-[44vh] rounded-full blur-[150px]" style={{ background: 'radial-gradient(circle, rgba(16,191,65,0.12), transparent 70%)' }} />
         <div className="absolute -bottom-40 left-1/3 h-[42vh] w-[42vh] rounded-full blur-[150px]" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.10), transparent 70%)' }} />
-        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(15,23,42,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.02) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
         <div className="absolute inset-0 opacity-[0.03] mix-blend-multiply" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
       </div>
 
