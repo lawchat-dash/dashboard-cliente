@@ -8,7 +8,6 @@ import {
   FileText, PenLine, Trophy, Check, UserPlus, UserX, Megaphone, Clock, CalendarDays,
   Sparkles, Target, ChevronRight, Activity, Radio,
 } from 'lucide-react';
-import logoImg from '@/assets/Logo_lawchat.png';
 
 interface PresentationModeProps {
   cards: Card[];
@@ -255,7 +254,7 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
       {/* header */}
       <div className="relative flex items-center justify-between px-7 py-4 shrink-0 border-b border-slate-200">
         <div className="flex items-center gap-3.5">
-          <div className="relative"><div className="absolute inset-0 rounded-xl bg-emerald-500/30 blur-lg" /><img src={logoImg} alt="" className="relative h-10 w-10 rounded-xl" /></div>
+          <img src="/lawchat-logo-light-bg.png" alt="LawChat" className="h-9 w-auto object-contain" />
           <div>
             <p className="text-xl font-bold leading-none tracking-tight">{clientName || 'LawChat'}</p>
             <div className="mt-1.5 flex items-center gap-2">
