@@ -84,6 +84,22 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
+// IMPORTANTE: definido FORA do componente. Se ficasse dentro, cada render (o relógio
+// re-renderiza a cada 1s) criaria um novo tipo de componente → React remontava TODOS
+// os painéis a cada segundo → animações/contadores reiniciavam sem parar (o "loop").
+const Panel = ({ title, icon: Icon, iconColor, right, children, className = '' }: any) => (
+  <div className={`relative rounded-2xl border border-white/[0.07] bg-white/[0.025] backdrop-blur-xl p-4 ${className}`}>
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="h-4 w-4" style={{ color: iconColor }} />}
+        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-white/70">{title}</h3>
+      </div>
+      {right}
+    </div>
+    {children}
+  </div>
+);
+
 const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps) => {
   const { classify } = useClassify();
   const [active, setActive] = useState(false);
@@ -223,19 +239,6 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
       </button>
     );
   }
-
-  const Panel = ({ title, icon: Icon, iconColor, right, children, className = '' }: any) => (
-    <div className={`relative rounded-2xl border border-white/[0.07] bg-white/[0.025] backdrop-blur-xl p-4 ${className}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4" style={{ color: iconColor }} />}
-          <h3 className="text-[13px] font-semibold uppercase tracking-wide text-white/70">{title}</h3>
-        </div>
-        {right}
-      </div>
-      {children}
-    </div>
-  );
 
   const hov = hoverIdx != null ? d.daily[hoverIdx] : null;
 
