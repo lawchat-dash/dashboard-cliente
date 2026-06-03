@@ -88,11 +88,11 @@ function Spark({ data, color }: { data: number[]; color: string }) {
 // re-renderiza a cada 1s) criaria um novo tipo de componente → React remontava TODOS
 // os painéis a cada segundo → animações/contadores reiniciavam sem parar (o "loop").
 const Panel = ({ title, icon: Icon, iconColor, right, children, className = '' }: any) => (
-  <div className={`relative rounded-2xl border border-white/[0.07] bg-white/[0.025] backdrop-blur-xl p-4 ${className}`}>
+  <div className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)] ${className}`}>
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
         {Icon && <Icon className="h-4 w-4" style={{ color: iconColor }} />}
-        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-white/70">{title}</h3>
+        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
       </div>
       {right}
     </div>
@@ -243,34 +243,34 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
   const hov = hoverIdx != null ? d.daily[hoverIdx] : null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#020617] text-white">
-      {/* fundo */}
+    <div className="fixed inset-0 z-[100] flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
+      {/* fundo — washes de cor bem suaves (clean, sem poluir o branco) */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div className="absolute -top-1/4 left-0 h-[60vh] w-[60vh] rounded-full blur-[160px]" style={{ background: 'radial-gradient(circle,rgba(59,130,246,0.14),transparent 70%)' }} animate={{ x: [0, 70, 0], y: [0, 40, 0] }} transition={{ duration: 18, repeat: Infinity }} />
-        <motion.div className="absolute top-1/4 right-0 h-[55vh] w-[55vh] rounded-full blur-[160px]" style={{ background: 'radial-gradient(circle,rgba(34,197,94,0.12),transparent 70%)' }} animate={{ x: [0, -60, 0], y: [0, -30, 0] }} transition={{ duration: 22, repeat: Infinity }} />
-        <motion.div className="absolute -bottom-1/4 left-1/3 h-[50vh] w-[50vh] rounded-full blur-[160px]" style={{ background: 'radial-gradient(circle,rgba(168,85,247,0.10),transparent 70%)' }} animate={{ x: [0, 40, 0] }} transition={{ duration: 20, repeat: Infinity }} />
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px)', backgroundSize: '56px 56px' }} />
+        <motion.div className="absolute -top-1/4 left-0 h-[60vh] w-[60vh] rounded-full blur-[170px]" style={{ background: 'radial-gradient(circle,rgba(59,130,246,0.10),transparent 70%)' }} animate={{ x: [0, 70, 0], y: [0, 40, 0] }} transition={{ duration: 18, repeat: Infinity }} />
+        <motion.div className="absolute top-1/4 right-0 h-[55vh] w-[55vh] rounded-full blur-[170px]" style={{ background: 'radial-gradient(circle,rgba(34,197,94,0.09),transparent 70%)' }} animate={{ x: [0, -60, 0], y: [0, -30, 0] }} transition={{ duration: 22, repeat: Infinity }} />
+        <motion.div className="absolute -bottom-1/4 left-1/3 h-[50vh] w-[50vh] rounded-full blur-[170px]" style={{ background: 'radial-gradient(circle,rgba(168,85,247,0.07),transparent 70%)' }} animate={{ x: [0, 40, 0] }} transition={{ duration: 20, repeat: Infinity }} />
+        <div className="absolute inset-0 opacity-[0.5]" style={{ backgroundImage: 'linear-gradient(rgba(15,23,42,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.04) 1px,transparent 1px)', backgroundSize: '56px 56px' }} />
       </div>
 
       {/* header */}
-      <div className="relative flex items-center justify-between px-7 py-4 shrink-0 border-b border-white/[0.06]">
+      <div className="relative flex items-center justify-between px-7 py-4 shrink-0 border-b border-slate-200">
         <div className="flex items-center gap-3.5">
           <div className="relative"><div className="absolute inset-0 rounded-xl bg-emerald-500/30 blur-lg" /><img src={logoImg} alt="" className="relative h-10 w-10 rounded-xl" /></div>
           <div>
             <p className="text-xl font-bold leading-none tracking-tight">{clientName || 'LawChat'}</p>
             <div className="mt-1.5 flex items-center gap-2">
               <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" /></span>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400">Ao vivo</span>
-              <span className="text-[11px] text-white/30">· Visão Geral · {d.total.toLocaleString('pt-BR')} leads</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-600">Ao vivo</span>
+              <span className="text-[11px] text-slate-400">· Visão Geral · {d.total.toLocaleString('pt-BR')} leads</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-5">
           <div className="text-right">
             <span className="block text-2xl font-bold tabular-nums tracking-wider leading-none">{clock}</span>
-            <span className="block text-[10px] uppercase tracking-[0.18em] text-white/35 mt-1">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</span>
+            <span className="block text-[10px] uppercase tracking-[0.18em] text-slate-400 mt-1">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</span>
           </div>
-          <button onClick={() => setActive(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-colors" title="Sair (Esc)"><X className="h-5 w-5" /></button>
+          <button onClick={() => setActive(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors" title="Sair (Esc)"><X className="h-5 w-5" /></button>
         </div>
       </div>
 
@@ -282,20 +282,21 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
             const up = k.delta >= 0;
             return (
               <motion.div key={k.label} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                className="group relative overflow-hidden rounded-3xl border p-5" style={{ borderColor: `${k.color}2e`, background: 'linear-gradient(180deg,rgba(7,17,31,.7),rgba(7,17,31,.45))', boxShadow: `0 25px 70px -35px ${k.color}88` }}>
-                <div className="absolute -top-14 -right-14 h-36 w-36 rounded-full blur-3xl" style={{ background: `${k.color}26` }} />
+                className="group relative overflow-hidden rounded-3xl border bg-white p-5" style={{ borderColor: `${k.color}33`, boxShadow: `0 12px 32px -16px ${k.color}55, 0 1px 3px rgba(15,23,42,0.06)` }}>
+                <div className="absolute -top-14 -right-14 h-36 w-36 rounded-full blur-3xl" style={{ background: `${k.color}14` }} />
+                <div className="absolute inset-x-0 top-0 h-1 rounded-t-3xl" style={{ background: `linear-gradient(90deg, transparent, ${k.color}, transparent)`, opacity: 0.5 }} />
                 <div className="relative flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `${k.color}22`, border: `1px solid ${k.color}44` }}><k.icon className="h-4 w-4" style={{ color: k.color }} /></div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/45">{k.label}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{k.label}</span>
                     </div>
                     <p className="text-[44px] leading-none font-extrabold tracking-tight tabular-nums" style={{ color: k.color }}>
                       <AnimatedCounter value={k.value} decimals={k.decimals} suffix={(k as any).suffix || ''} duration={1500} />
                     </p>
-                    <p className={`mt-2 flex items-center gap-1 text-[11px] font-semibold ${up ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <p className={`mt-2 flex items-center gap-1 text-[11px] font-semibold ${up ? 'text-emerald-600' : 'text-red-500'}`}>
                       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                      {up ? '↑' : '↓'} {Math.abs(k.delta).toFixed(1)}{(k as any).pp ? ' p.p.' : '%'} <span className="font-normal text-white/35">vs período anterior</span>
+                      {up ? '↑' : '↓'} {Math.abs(k.delta).toFixed(1)}{(k as any).pp ? ' p.p.' : '%'} <span className="font-normal text-slate-400">vs período anterior</span>
                     </p>
                   </div>
                   <div className="mt-1"><Spark data={k.spark} color={k.color} /></div>
@@ -314,37 +315,37 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
                 return (
                   <div key={f.key} className="flex items-center gap-1 flex-1 min-w-0">
                     <motion.div initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ delay: i * 0.09 }}
-                      className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center min-w-[92px]">
-                      <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: `${f.color}1f`, border: `1px solid ${f.color}40`, boxShadow: `0 0 16px -4px ${f.color}aa` }}>
+                      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-3 text-center min-w-[92px]">
+                      <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: `${f.color}14`, border: `1px solid ${f.color}33`, boxShadow: `0 4px 12px -5px ${f.color}66` }}>
                         <f.icon className="h-4 w-4" style={{ color: f.color }} />
                       </div>
-                      <p className="text-[10px] text-white/45 truncate">{f.label}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{f.label}</p>
                       <p className="text-xl font-bold tabular-nums leading-tight" style={{ color: f.color }}>{f.count.toLocaleString('pt-BR')}</p>
-                      <p className={`text-[10px] font-medium ${up ? 'text-emerald-400' : 'text-red-400'}`}>{up ? '↑' : '↓'} {Math.abs(f.trend).toFixed(1)}%</p>
+                      <p className={`text-[10px] font-medium ${up ? 'text-emerald-600' : 'text-red-500'}`}>{up ? '↑' : '↓'} {Math.abs(f.trend).toFixed(1)}%</p>
                     </motion.div>
-                    {i < d.funnel.length - 1 && <ChevronRight className="h-4 w-4 text-white/20 shrink-0" />}
+                    {i < d.funnel.length - 1 && <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />}
                   </div>
                 );
               })}
             </div>
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-500/15 bg-blue-500/[0.06] p-2.5">
-              <Sparkles className="h-3.5 w-3.5 text-blue-400 mt-0.5 shrink-0" />
-              <p className="text-[11px] text-white/55 leading-snug">Leads que chegam em <strong className="text-white/80">Aguardando Assinatura</strong> têm alta probabilidade de fechamento — {d.funnel[4]?.count || 0} aguardando agora.</p>
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 p-2.5">
+              <Sparkles className="h-3.5 w-3.5 text-blue-600 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-slate-600 leading-snug">Leads que chegam em <strong className="text-slate-700">Aguardando Assinatura</strong> têm alta probabilidade de fechamento — {d.funnel[4]?.count || 0} aguardando agora.</p>
             </div>
           </Panel>
 
-          <Panel title="Atividade em Tempo Real" icon={Radio} iconColor="#22c55e" right={<span className="text-[10px] text-emerald-400 flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />stream</span>}>
+          <Panel title="Atividade em Tempo Real" icon={Radio} iconColor="#22c55e" right={<span className="text-[10px] text-emerald-600 flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />stream</span>}>
             <div className="space-y-2.5">
-              {d.feed.length === 0 ? <p className="text-xs text-white/30 py-4 text-center">Sem atividade recente.</p> : d.feed.map((ev, i) => {
+              {d.feed.length === 0 ? <p className="text-xs text-slate-400 py-4 text-center">Sem atividade recente.</p> : d.feed.map((ev, i) => {
                 const tone = ev.type === 'success' ? '#22c55e' : ev.type === 'blue' ? '#3b82f6' : ev.type === 'red' ? '#ef4444' : '#a855f7';
                 return (
                   <motion.div key={i} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 }} className="flex items-center gap-2.5">
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ background: `${tone}1f`, border: `1px solid ${tone}3a` }}><ev.icon className="h-3.5 w-3.5" style={{ color: tone }} /></span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-white/85 truncate">{ev.title}</p>
-                      <p className="text-[10px] text-white/40 truncate">{ev.sub}</p>
+                      <p className="text-xs font-medium text-slate-800 truncate">{ev.title}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{ev.sub}</p>
                     </div>
-                    <span className="text-[10px] text-white/30 shrink-0">{ago(ev.t)}</span>
+                    <span className="text-[10px] text-slate-400 shrink-0">{ago(ev.t)}</span>
                   </motion.div>
                 );
               })}
@@ -355,7 +356,7 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
         {/* Evolução + Distribuição + Top Origens */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Evolução */}
-          <Panel title="Evolução de Leads" icon={TrendingUp} iconColor="#3b82f6" right={<span className="text-[10px] text-white/35">últimos 30 dias</span>}>
+          <Panel title="Evolução de Leads" icon={TrendingUp} iconColor="#3b82f6" right={<span className="text-[10px] text-slate-400">últimos 30 dias</span>}>
             <div className="relative">
               <svg ref={svgRef} viewBox={`0 0 ${chart.W} ${chart.H}`} className="w-full" style={{ height: 150, cursor: 'crosshair' }} onMouseMove={handleMove} onMouseLeave={() => setHoverIdx(null)}>
                 <defs><linearGradient id="evo-noc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity="0.32" /><stop offset="100%" stopColor="#3b82f6" stopOpacity="0" /></linearGradient></defs>
@@ -364,15 +365,15 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
                 {hoverIdx != null && hov != null && (<g><line x1={chart.x(hoverIdx)} y1={chart.padT} x2={chart.x(hoverIdx)} y2={chart.H - chart.padB} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} /><circle cx={chart.x(hoverIdx)} cy={chart.y(hov)} r={4} fill="#3b82f6" stroke="#fff" strokeWidth={1.5} /></g>)}
               </svg>
               {hoverIdx != null && hov != null && (
-                <div className="pointer-events-none absolute z-10 rounded-lg border border-white/10 bg-[#0b1426]/95 px-2.5 py-1.5 shadow-xl whitespace-nowrap" style={{ left: `${Math.max(8, Math.min(88, (chart.x(hoverIdx) / chart.W) * 100))}%`, top: 4, transform: 'translateX(-50%)' }}>
-                  <p className="text-[10px] text-white/50">{new Date(d.labels[hoverIdx]).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</p>
-                  <p className="text-sm font-bold text-blue-400">{hov} <span className="text-[10px] font-normal text-white/40">leads</span></p>
+                <div className="pointer-events-none absolute z-10 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 shadow-xl whitespace-nowrap" style={{ left: `${Math.max(8, Math.min(88, (chart.x(hoverIdx) / chart.W) * 100))}%`, top: 4, transform: 'translateX(-50%)' }}>
+                  <p className="text-[10px] text-slate-500">{new Date(d.labels[hoverIdx]).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</p>
+                  <p className="text-sm font-bold text-blue-600">{hov} <span className="text-[10px] font-normal text-slate-500">leads</span></p>
                 </div>
               )}
             </div>
-            <div className="mt-2 grid grid-cols-4 gap-2 border-t border-white/[0.06] pt-2.5">
+            <div className="mt-2 grid grid-cols-4 gap-2 border-t border-slate-200 pt-2.5">
               {[{ l: 'Total', v: d.dailyTotal.toLocaleString('pt-BR') }, { l: 'Média/dia', v: d.avgDay.toFixed(1) }, { l: 'Maior pico', v: d.daily[d.maxI] }, { l: 'Menor', v: d.daily[d.minI] }].map(s => (
-                <div key={s.l}><p className="text-sm font-bold tabular-nums text-white/90">{s.v}</p><p className="text-[9px] uppercase tracking-wide text-white/35">{s.l}</p></div>
+                <div key={s.l}><p className="text-sm font-bold tabular-nums text-slate-800">{s.v}</p><p className="text-[9px] uppercase tracking-wide text-slate-400">{s.l}</p></div>
               ))}
             </div>
           </Panel>
@@ -382,13 +383,13 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
             <div className="flex items-center gap-3">
               <div className="relative h-[120px] w-[120px] shrink-0">
                 <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-                  {(() => { const R = 46, C = 2 * Math.PI * R; let acc = 0; return d.donutSegs.map((s, i) => { const seg = (s.count / d.donutTotal) * C; const rot = (acc / d.donutTotal) * 360; acc += s.count; return (<motion.circle key={s.key} cx={60} cy={60} r={R} fill="none" stroke={s.color} strokeWidth={12} strokeDasharray={`${seg} ${C}`} transform={`rotate(${rot} 60 60)`} style={{ filter: `drop-shadow(0 0 4px ${s.color}aa)` }} initial={{ strokeDashoffset: seg }} animate={{ strokeDashoffset: 0 }} transition={{ duration: 0.9, delay: 0.2 + i * 0.08 }} />); }); })()}
+                  {(() => { const R = 46, C = 2 * Math.PI * R; let acc = 0; return d.donutSegs.map((s, i) => { const seg = (s.count / d.donutTotal) * C; const rot = (acc / d.donutTotal) * 360; acc += s.count; return (<motion.circle key={s.key} cx={60} cy={60} r={R} fill="none" stroke={s.color} strokeWidth={12} strokeDasharray={`${seg} ${C}`} transform={`rotate(${rot} 60 60)`} style={{ filter: `drop-shadow(0 1px 2px ${s.color}55)` }} initial={{ strokeDashoffset: seg }} animate={{ strokeDashoffset: 0 }} transition={{ duration: 0.9, delay: 0.2 + i * 0.08 }} />); }); })()}
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-lg font-bold leading-none"><AnimatedCounter value={d.total} /></span><span className="text-[9px] text-white/40">Total</span></div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-lg font-bold leading-none"><AnimatedCounter value={d.total} /></span><span className="text-[9px] text-slate-500">Total</span></div>
               </div>
               <div className="flex-1 min-w-0 space-y-1">
                 {d.donutSegs.map(s => (
-                  <div key={s.key} className="flex items-center gap-2 text-[11px]"><span className="h-2 w-2 rounded-full shrink-0" style={{ background: s.color }} /><span className="flex-1 truncate text-white/60">{s.label}</span><span className="font-semibold text-white/85 tabular-nums">{((s.count / d.donutTotal) * 100).toFixed(1)}%</span></div>
+                  <div key={s.key} className="flex items-center gap-2 text-[11px]"><span className="h-2 w-2 rounded-full shrink-0" style={{ background: s.color }} /><span className="flex-1 truncate text-slate-600">{s.label}</span><span className="font-semibold text-slate-800 tabular-nums">{((s.count / d.donutTotal) * 100).toFixed(1)}%</span></div>
                 ))}
               </div>
             </div>
@@ -396,15 +397,15 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
 
           {/* Top Origens */}
           <Panel title="Top 5 Origens de Leads" icon={Megaphone} iconColor="#3b82f6">
-            {d.topSources.length === 0 ? <p className="text-xs text-white/30 py-6 text-center">Sem dados de origem.</p> : (
+            {d.topSources.length === 0 ? <p className="text-xs text-slate-400 py-6 text-center">Sem dados de origem.</p> : (
               <div className="space-y-2.5">
                 {d.topSources.map(([name, v], i) => (
                   <motion.div key={name} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-center gap-2.5">
-                    <span className="w-4 text-[11px] font-bold text-white/30">{i + 1}</span>
-                    <span className="w-24 text-[11px] text-white/65 truncate shrink-0">{name}</span>
-                    <div className="flex-1 h-2 rounded-full bg-white/[0.06] overflow-hidden"><motion.div className="h-full rounded-full bg-gradient-to-r from-blue-500/70 to-blue-400" style={{ boxShadow: '0 0 8px rgba(59,130,246,.6)' }} initial={{ width: 0 }} animate={{ width: `${(v / (d.topSources[0][1] || 1)) * 100}%` }} transition={{ duration: 0.9, delay: 0.1 + i * 0.08 }} /></div>
-                    <span className="text-[11px] font-semibold tabular-nums text-white/85 w-12 text-right">{v.toLocaleString('pt-BR')}</span>
-                    <span className="text-[10px] tabular-nums text-white/35 w-10 text-right">{((v / d.srcTotal) * 100).toFixed(1)}%</span>
+                    <span className="w-4 text-[11px] font-bold text-slate-400">{i + 1}</span>
+                    <span className="w-24 text-[11px] text-slate-700 truncate shrink-0">{name}</span>
+                    <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><motion.div className="h-full rounded-full bg-gradient-to-r from-blue-500/70 to-blue-400" style={{ boxShadow: '0 0 8px rgba(59,130,246,.6)' }} initial={{ width: 0 }} animate={{ width: `${(v / (d.topSources[0][1] || 1)) * 100}%` }} transition={{ duration: 0.9, delay: 0.1 + i * 0.08 }} /></div>
+                    <span className="text-[11px] font-semibold tabular-nums text-slate-800 w-12 text-right">{v.toLocaleString('pt-BR')}</span>
+                    <span className="text-[10px] tabular-nums text-slate-400 w-10 text-right">{((v / d.srcTotal) * 100).toFixed(1)}%</span>
                   </motion.div>
                 ))}
               </div>
@@ -421,9 +422,9 @@ const PresentationMode = ({ cards, sessions, clientName }: PresentationModeProps
               { icon: Clock, tone: '#f59e0b', t: 'Horário de pico', s: `${String(d.peakHr).padStart(2, '0')}h — ${d.hrPct}% dos leads` },
               { icon: Target, tone: '#3b82f6', t: 'Meta mensal', s: `${d.goalPct}% alcançada (${d.closedMonth}/${d.goal})` },
             ].map((ins, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ background: `${ins.tone}1f`, border: `1px solid ${ins.tone}3a` }}><ins.icon className="h-4 w-4" style={{ color: ins.tone }} /></span>
-                <div className="min-w-0"><p className="text-xs font-semibold text-white/85">{ins.t}</p><p className="text-[10px] text-white/45 leading-snug">{ins.s}</p></div>
+                <div className="min-w-0"><p className="text-xs font-semibold text-slate-800">{ins.t}</p><p className="text-[10px] text-slate-500 leading-snug">{ins.s}</p></div>
               </motion.div>
             ))}
           </div>
