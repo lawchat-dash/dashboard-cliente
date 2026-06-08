@@ -77,6 +77,8 @@ const AdminClients = () => {
   const [syncingClient, setSyncingClient] = useState<string | null>(null);
   const [refreshingMetrics, setRefreshingMetrics] = useState<string | null>(null);
   const [loadingSteps, setLoadingSteps] = useState(false);
+  const [availablePanels, setAvailablePanels] = useState<{ id: string; title: string; cardCount: number }[]>([]);
+  const [loadingPanels, setLoadingPanels] = useState(false);
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<string>('30d');
@@ -168,6 +170,30 @@ const AdminClients = () => {
       setAvailableNumbers(Array.from(set).sort());
     } catch (e) { console.error(e); }
     finally { setLoadingNumbers(false); }
+  };
+
+  // Descobre os painéis do cliente AO VIVO na Helena (via server.js) → clica pra adicionar.
+  const loadClientPanels = async () => {
+    if (!apiKey) { toast.error('Informe a API Key da Helena primeiro'); return; }
+    setLoadingPanels(true);
+    try {
+      const resp = await fetch('/api/client-panels', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Falha ao buscar painéis');
+      setAvailablePanels(data.panels || []);
+      if (!data.panels?.length) toast.info('Nenhum painel encontrado para essa API Key.');
+      else toast.success(`${data.panels.length} painéis encontrados! Clique para adicionar.`);
+    } catch (e: any) { toast.error(e.message || 'Erro ao buscar painéis'); }
+    finally { setLoadingPanels(false); }
+  };
+  const addPanelFromList = (p: { id: string; title: string }) => {
+    setPanels(prev => {
+      if (prev.some(x => x.panel_id === p.id)) return prev;
+      const cleaned = prev.filter(x => x.panel_id.trim());
+      return [...cleaned, { panel_id: p.id, panel_name: p.title, sync_interval_minutes: 10 }];
+    });
   };
 
   const loadClientSteps = async (clientId?: string) => {
@@ -497,7 +523,31 @@ const AdminClients = () => {
 
             {/* Panels */}
             <div>
-              <label className="mb-1 block text-sm font-medium">Painéis CRM</label>
+              <div className="mb-1 flex items-center justify-between">
+                <label className="block text-sm font-medium">Painéis CRM</label>
+                <Button size="sm" variant="outline" onClick={loadClientPanels} disabled={loadingPanels}>
+                  {loadingPanels ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />} Carregar Painéis
+                </Button>
+              </div>
+              {availablePanels.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5 rounded-lg border border-border/60 bg-muted/20 p-2">
+                  {availablePanels.map(p => {
+                    const added = panels.some(x => x.panel_id === p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => addPanelFromList(p)}
+                        disabled={added}
+                        className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${added ? 'border-primary/40 bg-primary/10 text-primary cursor-default' : 'border-border bg-background hover:bg-secondary'}`}
+                        title={p.id}
+                      >
+                        {added ? '✓ ' : '+ '}{p.title} <span className="text-muted-foreground">({p.cardCount})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="space-y-2">
                 {panels.map((p, i) => (
                   <div key={i} className="flex gap-2">

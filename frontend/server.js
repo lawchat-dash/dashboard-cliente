@@ -1501,6 +1501,32 @@ const server = http.createServer(async (req, res) => {
     return runSyncEndpoint(req, res, syncSessions);
   }
 
+  // --- POST /api/client-panels body: {apiKey?, clientId?}
+  // Lista AO VIVO os painéis do cliente na Helena (GET /crm/v1/panel) pro admin
+  // escolher quais sincronizar — sem precisar digitar UUID.
+  if (req.method === "POST" && req.url === "/api/client-panels") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        let apiKey = parsed.apiKey;
+        if (!apiKey && parsed.clientId) {
+          const cRes = await pool.query("SELECT helena_api_key FROM helena_clientes_crm WHERE id=$1", [parsed.clientId]);
+          if (cRes.rows.length) apiKey = cRes.rows[0].helena_api_key;
+        }
+        if (!apiKey) return json(res, { error: "apiKey obrigatório" }, 400);
+        const resp = await helenaGet("/crm/v1/panel?PageNumber=1&PageSize=100", apiKey);
+        const items = (resp?.items || []).map((p) => ({ id: p.id, title: p.title || "", cardCount: p.cardCount || 0 }));
+        json(res, { panels: items });
+      } catch (err) {
+        console.error("client-panels err:", err);
+        json(res, { error: err.message }, 500);
+      }
+    });
+    return;
+  }
+
   // --- POST /api/panel-steps body: {apiKey?, clientId?, panelIds?: []}
   // Busca AO VIVO as etapas (steps) dos painéis na Helena para o mapeamento no admin,
   // MESMO antes de qualquer sync. GET /crm/v1/panel/{id}?IncludeDetails=Steps
