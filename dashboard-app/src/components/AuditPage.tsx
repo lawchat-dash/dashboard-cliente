@@ -73,12 +73,21 @@ function scoreColor(score: number): { bg: string; text: string } {
 interface AuditPageProps {
   cards: Card[];
   sessions: Session[];
+  /** Etapa pré-selecionada ao abrir (ex.: vindo de um clique em KPI/funil). */
+  initialStage?: string;
+  /** 'closed' pré-seleciona a etapa de contrato fechado. */
+  mode?: 'all' | 'closed';
+  /** Quando renderizado dentro de um modal: ocupa a altura do container (h-full). */
+  embedded?: boolean;
 }
 
-const AuditPage = ({ cards, sessions }: AuditPageProps) => {
+const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = false }: AuditPageProps) => {
   const { classify } = useClassify();
   const isMobile = useIsMobile();
-  const [activeStage, setActiveStage] = useState<string | null>(null);
+  const resolvedInitialStage = initialStage || (mode === 'closed' ? 'CONTRATO FECHADO' : null);
+  const [activeStage, setActiveStage] = useState<string | null>(resolvedInitialStage);
+  // Reflete mudança de etapa inicial (modal reaberto em outra etapa)
+  useEffect(() => { setActiveStage(resolvedInitialStage); }, [resolvedInitialStage]);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [previewCardId, setPreviewCardId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<'stages' | 'leads' | 'preview'>('stages');
@@ -236,7 +245,7 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
     // Mobile: Preview panel
     if (mobileView === 'preview' && activePreviewUrl) {
       return (
-        <div className="flex flex-col h-[calc(100vh-120px)] rounded-xl border border-border bg-card shadow-card overflow-hidden">
+        <div className={`flex flex-col ${embedded ? 'h-full' : 'h-[calc(100vh-120px)]'} rounded-xl border border-border bg-card shadow-card overflow-hidden`}>
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-border bg-muted/30">
             <button onClick={() => setMobileView('leads')} className="flex items-center gap-1 text-sm text-primary">
               <ArrowLeft className="h-4 w-4" /> Voltar
@@ -256,7 +265,7 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
     // Mobile: Leads list
     if (mobileView === 'leads') {
       return (
-        <div className="flex flex-col h-[calc(100vh-120px)] rounded-xl border border-border bg-card shadow-card overflow-hidden">
+        <div className={`flex flex-col ${embedded ? 'h-full' : 'h-[calc(100vh-120px)]'} rounded-xl border border-border bg-card shadow-card overflow-hidden`}>
           <div className="px-4 pt-3 pb-2 border-b border-border">
             <button onClick={() => setMobileView('stages')} className="flex items-center gap-1 text-sm text-primary mb-2">
               <ArrowLeft className="h-4 w-4" /> Etapas
@@ -379,7 +388,7 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
 
   // DESKTOP LAYOUT — original 3-column
   return (
-    <div className="flex h-[calc(100vh-140px)] rounded-xl border border-border bg-card shadow-card overflow-hidden">
+    <div className={`flex ${embedded ? 'h-full' : 'h-[calc(100vh-140px)]'} rounded-xl border border-border bg-card shadow-card overflow-hidden`}>
       {/* Stage sidebar */}
       <div className="flex flex-col gap-1 border-r border-border px-3 py-5 bg-muted/30 min-w-[170px] max-w-[200px]">
         <div className="flex items-center gap-2 mb-3 px-2">
