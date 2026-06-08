@@ -288,9 +288,13 @@ const buildCardsUrl = (panelId, pn, sz, updatedAfter) => {
   return u;
 };
 
+const SESSION_DETAIL_FIELDS = ["AgentDetails","DepartmentsDetails","ContactDetails","ChannelTypeDetails","ClassificationDetails","ChannelDetails"];
+// Mesmo conjunto de detalhes para o LISTAGEM em lote (/chat/v2/session) — traz
+// contactDetails.tagsName/tagsId, agentDetails, departmentDetails, utm, classification
+// inline em cada item, sem precisar de request por sessão.
+const SESSION_INCLUDE = SESSION_DETAIL_FIELDS.map((d) => `IncludeDetails=${d}`).join("&");
 const buildSessionDetailUrl = (sid) => {
-  const inc = ["AgentDetails","DepartmentsDetails","ContactDetails","ChannelTypeDetails","ClassificationDetails","ChannelDetails"]
-    .map((d) => `includeDetails=${d}`).join("&");
+  const inc = SESSION_DETAIL_FIELDS.map((d) => `includeDetails=${d}`).join("&");
   return `/chat/v2/session/${encodeURIComponent(sid)}?${inc}`;
 };
 
@@ -429,7 +433,13 @@ function transformSession(s, clientId, contactId, cardId, syncedAt, clientName =
     agent_name: s.agentDetails?.name || s.agent?.name || null,
     department_id: s.departmentDetails?.id || s.departmentsDetails?.[0]?.id || null,
     department_name: s.departmentDetails?.name || s.departmentsDetails?.[0]?.name || null,
-    classification: s.classificationDetails?.name || s.classification?.name || null,
+    classification: s.classification?.categoryName || s.classificationDetails?.name || s.classification?.name || null,
+    classification_category: s.classification?.category || s.classificationDetails?.category || null,
+    classification_amount: (s.classification?.amount ?? s.classificationDetails?.amount) || null,
+    // Etiquetas (tags) do contato — vêm inline no list quando IncludeDetails=ContactDetails.
+    // Guarda NULL (não []) quando vazio p/ o COALESCE no upsert preservar enriquecimentos anteriores.
+    contact_tag_names: (s.contactDetails?.tagsName?.length ? s.contactDetails.tagsName : null),
+    contact_tag_ids: (s.contactDetails?.tagsId?.length ? s.contactDetails.tagsId : null),
     time_service: s.timeService || null,
     window_status: s.windowStatus || null,
     unread_count: s.unreadCount || 0,
@@ -573,6 +583,7 @@ async function upsertSessions(rows) {
       number, status, status_description, type,
       channel_id, channel_type, channel_name, channel_phone, channel_provider,
       agent_id, agent_name, department_id, department_name, classification,
+      classification_category, classification_amount, contact_tag_names, contact_tag_ids,
       time_service, window_status, unread_count,
       last_message_text, last_interaction_at, last_message_in_at,
       last_message_out_at, first_response_at, preview_url, chat_url,
@@ -587,6 +598,7 @@ async function upsertSessions(rows) {
            number, status, status_description, type,
            channel_id, channel_type, channel_name, channel_phone, channel_provider,
            agent_id, agent_name, department_id, department_name, classification,
+           classification_category, classification_amount, contact_tag_names, contact_tag_ids,
            time_service, window_status, unread_count,
            last_message_text, last_interaction_at, last_message_in_at,
            last_message_out_at, first_response_at, preview_url, chat_url,
@@ -606,6 +618,11 @@ async function upsertSessions(rows) {
       status=EXCLUDED.status,
       agent_name=COALESCE(EXCLUDED.agent_name, helena_sessions.agent_name),
       department_name=COALESCE(EXCLUDED.department_name, helena_sessions.department_name),
+      classification=COALESCE(EXCLUDED.classification, helena_sessions.classification),
+      classification_category=COALESCE(EXCLUDED.classification_category, helena_sessions.classification_category),
+      classification_amount=COALESCE(EXCLUDED.classification_amount, helena_sessions.classification_amount),
+      contact_tag_names=COALESCE(EXCLUDED.contact_tag_names, helena_sessions.contact_tag_names),
+      contact_tag_ids=COALESCE(EXCLUDED.contact_tag_ids, helena_sessions.contact_tag_ids),
       channel_name=COALESCE(EXCLUDED.channel_name, helena_sessions.channel_name),
       channel_phone=COALESCE(EXCLUDED.channel_phone, helena_sessions.channel_phone),
       time_service=EXCLUDED.time_service, window_status=EXCLUDED.window_status,
@@ -911,7 +928,7 @@ async function syncSessionsBulk(client, opts, onProgress) {
 
     // 2. Primeira página → metadados (totalPages/totalItems)
     const first = await helenaGet(
-      `/chat/v2/session?PageNumber=1&PageSize=${pageSize}&OrderDirection=ASCENDING`,
+      `/chat/v2/session?${SESSION_INCLUDE}&PageNumber=1&PageSize=${pageSize}&OrderDirection=ASCENDING`,
       key, clientId, onReq
     );
     const totalPages = first.totalPages || 1;
@@ -965,7 +982,7 @@ async function syncSessionsBulk(client, opts, onProgress) {
         await sleep(THROTTLE_MS);
         try {
           const pd = await helenaGet(
-            `/chat/v2/session?PageNumber=${pageNo}&PageSize=${pageSize}&OrderDirection=ASCENDING`,
+            `/chat/v2/session?${SESSION_INCLUDE}&PageNumber=${pageNo}&PageSize=${pageSize}&OrderDirection=ASCENDING`,
             key, clientId, onReq
           );
           items = extractItems(pd);
@@ -994,16 +1011,20 @@ async function syncSessionsBulk(client, opts, onProgress) {
       [clientId]
     );
 
-    // 4. Enriquecimento: o v2 list não traz contactDetails — preenche nome/telefone
-    //    a partir da tabela helena_contacts (já sincronizada) via contact_id.
+    // 4. Enriquecimento (rede de segurança): com IncludeDetails o v2 list já traz
+    //    contactDetails (nome/telefone/tags). Mantemos este fallback p/ sessões antigas
+    //    sem contactDetails, preenchendo a partir de helena_contacts via contact_id.
     await pool.query(
       `UPDATE helena_sessions s
           SET contact_name  = COALESCE(s.contact_name, c.name),
-              contact_phone = COALESCE(s.contact_phone, c.phone_number_formatted, c.phone_number)
+              contact_phone = COALESCE(s.contact_phone, c.phone_number_formatted, c.phone_number),
+              contact_tag_names = COALESCE(s.contact_tag_names, c.tag_names),
+              contact_tag_ids   = COALESCE(s.contact_tag_ids, c.tag_ids::uuid[])
          FROM helena_contacts c
         WHERE c.id = s.contact_id
           AND s.client_id = $1
-          AND (s.contact_name IS NULL OR s.contact_phone IS NULL)`,
+          AND (s.contact_name IS NULL OR s.contact_phone IS NULL
+               OR (s.contact_tag_names IS NULL AND c.tag_names IS NOT NULL))`,
       [clientId]
     );
 

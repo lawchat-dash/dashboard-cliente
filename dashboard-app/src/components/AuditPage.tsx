@@ -3,7 +3,7 @@ import { Card, Session } from '@/api/helena';
 import { useClassify } from '@/contexts/StepMappingsContext';
 import { FUNNEL_STEPS, getStepDisplayName } from '@/utils/normalizeStep';
 import { extractCampaign } from '@/utils/extractCampaign';
-import { ExternalLink, Phone, User, ChevronDown, ChevronUp, MessageCircle, X, ClipboardCheck, Tag, ArrowLeft, RefreshCw, Search, Clock, Bot, ShieldAlert } from 'lucide-react';
+import { ExternalLink, Phone, User, ChevronDown, ChevronUp, MessageCircle, X, ClipboardCheck, Tag, ArrowLeft, RefreshCw, Search, Clock, Bot, ShieldAlert, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -86,6 +86,10 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
   const [syncingCardId, setSyncingCardId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [quickFilter, setQuickFilter] = useState<'all' | 'recent' | 'tagged' | 'ia_off' | 'no_grace'>('all');
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [tagOpen, setTagOpen] = useState(false);
+  const [tagSearch, setTagSearch] = useState('');
+  const tagBoxRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -117,11 +121,41 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
     return cardTags;
   }, [sessions]);
 
+  // Todas as tags presentes nos leads (para o multi-select)
+  const uniqueTags = useMemo(() => {
+    const set = new Set<string>();
+    cardContactTags.forEach(list => list.forEach(t => set.add(t.name)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [cardContactTags]);
+
+  const filteredTagOptions = useMemo(() => {
+    const q = tagSearch.trim().toLowerCase();
+    return q ? uniqueTags.filter(t => t.toLowerCase().includes(q)) : uniqueTags;
+  }, [uniqueTags, tagSearch]);
+
+  const toggleTagFilter = (name: string) =>
+    setTagFilter(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
+
+  useEffect(() => {
+    if (!tagOpen) return;
+    const h = (e: MouseEvent) => { if (tagBoxRef.current && !tagBoxRef.current.contains(e.target as Node)) setTagOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [tagOpen]);
+
   const filteredCards = useMemo(() => {
     let list = cards.filter(c => !c.archived);
     const q = search.trim().toLowerCase();
     // Com busca → atravessa TODAS as etapas; sem busca → respeita a etapa selecionada
     if (activeStage && !q) list = list.filter(c => classify(c) === activeStage);
+
+    // Filtro por tag (multi-select) — lead precisa ter ao menos UMA das tags selecionadas
+    if (tagFilter.length > 0) {
+      list = list.filter(c => {
+        const names = (cardContactTags.get(c.id) || []).map(t => t.name);
+        return tagFilter.some(t => names.includes(t));
+      });
+    }
 
     if (quickFilter === 'recent') {
       const cutoff = Date.now() - 24 * 3600 * 1000;
@@ -144,7 +178,7 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
       });
     }
     return list;
-  }, [cards, activeStage, classify, quickFilter, search, cardContactTags, sessionMap]);
+  }, [cards, activeStage, classify, quickFilter, tagFilter, search, cardContactTags, sessionMap]);
 
   const getPreviewUrl = (cardId: string): string | null => {
     const session = sessionMap.get(cardId);
@@ -429,6 +463,53 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
                 </button>
               );
             })}
+
+            {/* Multi-select de tags */}
+            {uniqueTags.length > 0 && (
+              <div className="relative shrink-0" ref={tagBoxRef}>
+                <button
+                  onClick={() => setTagOpen(o => !o)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${tagFilter.length > 0 ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}>
+                  <Tag className="h-3.5 w-3.5" />
+                  {tagFilter.length > 0 ? `${tagFilter.length} tag(s)` : 'Filtrar por tag'}
+                  <ChevronDown className="h-3 w-3 opacity-70" />
+                </button>
+                {tagOpen && (
+                  <div className="absolute top-full right-0 z-50 mt-1 w-72 rounded-lg border border-border bg-popover p-2 shadow-lg">
+                    <div className="relative mb-2">
+                      <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        type="text" placeholder="Pesquisar tag..." value={tagSearch}
+                        onChange={e => setTagSearch(e.target.value)}
+                        className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    {tagFilter.length > 0 && (
+                      <button onClick={() => setTagFilter([])} className="mb-1 w-full rounded-md px-2 py-1 text-left text-xs text-muted-foreground hover:bg-muted/50">
+                        Limpar seleção ({tagFilter.length})
+                      </button>
+                    )}
+                    <div className="max-h-56 overflow-y-auto space-y-0.5">
+                      {filteredTagOptions.length === 0 && (
+                        <div className="px-2 py-3 text-center text-xs text-muted-foreground">Nenhuma tag</div>
+                      )}
+                      {filteredTagOptions.map(name => {
+                        const checked = tagFilter.includes(name);
+                        return (
+                          <button key={name} onClick={() => toggleTagFilter(name)}
+                            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ${checked ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50 text-foreground'}`}>
+                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}>
+                              {checked && <Check className="h-3 w-3" />}
+                            </span>
+                            <span className="truncate">{name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <ScrollArea className="flex-1">
