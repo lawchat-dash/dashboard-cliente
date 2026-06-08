@@ -1501,6 +1501,54 @@ const server = http.createServer(async (req, res) => {
     return runSyncEndpoint(req, res, syncSessions);
   }
 
+  // --- POST /api/panel-steps body: {apiKey?, clientId?, panelIds?: []}
+  // Busca AO VIVO as etapas (steps) dos painéis na Helena para o mapeamento no admin,
+  // MESMO antes de qualquer sync. GET /crm/v1/panel/{id}?IncludeDetails=Steps
+  if (req.method === "POST" && req.url === "/api/panel-steps") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        let apiKey = parsed.apiKey;
+        let panelIds = Array.isArray(parsed.panelIds) ? parsed.panelIds.filter(Boolean) : [];
+        // fallback: completa com o que estiver salvo no banco (cliente já existente)
+        if ((!apiKey || panelIds.length === 0) && parsed.clientId) {
+          const cRes = await pool.query("SELECT helena_api_key, panel_ids FROM helena_clientes_crm WHERE id=$1", [parsed.clientId]);
+          if (cRes.rows.length) {
+            apiKey = apiKey || cRes.rows[0].helena_api_key;
+            if (panelIds.length === 0) panelIds = cRes.rows[0].panel_ids || [];
+          }
+        }
+        if (!apiKey) return json(res, { error: "apiKey obrigatório" }, 400);
+        if (!panelIds.length) return json(res, { error: "informe ao menos um painel" }, 400);
+
+        const seen = new Map();
+        const errors = [];
+        for (const pid of panelIds) {
+          try {
+            const panel = await helenaGet(`/crm/v1/panel/${encodeURIComponent(pid)}?IncludeDetails=Steps`, apiKey);
+            for (const s of panel?.steps || []) {
+              if (s.archived) continue;
+              if (!seen.has(s.id)) {
+                seen.set(s.id, { step_id: s.id, step_title: s.title || "", panel_id: pid, panel_title: panel.title || "", position: s.position || 0 });
+              }
+            }
+          } catch (e) {
+            errors.push({ panel: pid, error: e.message });
+            console.warn(`panel-steps ${pid}:`, e.message);
+          }
+        }
+        const steps = Array.from(seen.values()).sort((a, b) => a.position - b.position);
+        json(res, { steps, errors });
+      } catch (err) {
+        console.error("panel-steps err:", err);
+        json(res, { error: err.message }, 500);
+      }
+    });
+    return;
+  }
+
   // --- POST /api/sync-sessions-bulk body: {clientId, mode?, maxPages?, pageSize?}
   // Sync de sessões EM LOTE via /chat/v2/session (100 por página, usa totalPages).
   // mode: 'full' (todas as páginas) | 'incremental' (newest-first, para cedo)

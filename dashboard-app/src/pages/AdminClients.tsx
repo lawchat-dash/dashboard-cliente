@@ -170,20 +170,31 @@ const AdminClients = () => {
     finally { setLoadingNumbers(false); }
   };
 
-  const loadClientSteps = async (clientId: string) => {
+  const loadClientSteps = async (clientId?: string) => {
     setLoadingSteps(true);
     try {
-      const { data } = await supabase.from('helena_cards').select('step_id, step_title').eq('client_id', clientId).not('step_id', 'is', null);
-      const uniqueSteps = new Map<string, string>();
-      (data || []).forEach((row: any) => { if (row.step_id && !uniqueSteps.has(row.step_id)) uniqueSteps.set(row.step_id, row.step_title || ''); });
+      const panelIds = panels.map(p => p.panel_id.trim()).filter(Boolean);
+      if (!apiKey) { toast.error('Informe a API Key da Helena primeiro'); return; }
+      if (panelIds.length === 0) { toast.error('Adicione ao menos um painel (com ID) primeiro'); return; }
+      // Busca AO VIVO da Helena (via server.js), sem depender de sync prévio.
+      const resp = await fetch('/api/panel-steps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, panelIds, clientId }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Falha ao buscar etapas');
+      const fetched: { step_id: string; step_title: string }[] = data.steps || [];
       const existing = new Map(stepMappings.map(m => [m.step_id, m]));
-      const merged: StepMappingInput[] = [];
-      uniqueSteps.forEach((title, id) => { merged.push(existing.has(id) ? existing.get(id)! : { step_id: id, step_title: title, funnel_stage: '' }); });
+      const merged: StepMappingInput[] = fetched.map(s =>
+        existing.has(s.step_id) ? existing.get(s.step_id)! : { step_id: s.step_id, step_title: s.step_title, funnel_stage: '' }
+      );
       setStepMappings(merged);
-      if (merged.length === 0) toast.info('Nenhuma etapa encontrada. Faça o sync primeiro.');
-      else toast.success(`${merged.length} etapas encontradas!`);
-    } catch { toast.error('Erro ao carregar etapas'); }
-    finally { setLoadingSteps(false); }
+      if (merged.length === 0) toast.info('Nenhuma etapa retornada por esse(s) painel(is).');
+      else toast.success(`${merged.length} etapas carregadas da Helena!`);
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao carregar etapas');
+    } finally { setLoadingSteps(false); }
   };
 
   const handleSave = async () => {
@@ -553,14 +564,12 @@ const AdminClients = () => {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label className="block text-sm font-medium">Mapeamento de Etapas</label>
-                {editing && (
-                  <Button size="sm" variant="outline" onClick={() => loadClientSteps(editing.id)} disabled={loadingSteps}>
-                    {loadingSteps ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />} Carregar Etapas
-                  </Button>
-                )}
+                <Button size="sm" variant="outline" onClick={() => loadClientSteps(editing?.id)} disabled={loadingSteps}>
+                  {loadingSteps ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />} Carregar Etapas
+                </Button>
               </div>
               <p className="mb-2 text-xs text-muted-foreground">
-                {editing ? 'Clique em "Carregar Etapas" para buscar do CRM. Múltiplas etapas podem apontar para o mesmo estágio do funil.' : 'Salve e faça sync primeiro.'}
+                Preencha a <strong>API Key</strong> e o <strong>painel</strong> acima, clique em "Carregar Etapas" e o sistema busca as etapas direto da Helena (não precisa de sync prévio). Múltiplas etapas podem apontar para o mesmo estágio do funil.
               </p>
 
               {/* Group by funnel stage for visual clarity */}
