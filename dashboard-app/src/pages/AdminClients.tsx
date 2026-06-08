@@ -245,19 +245,39 @@ const AdminClients = () => {
     toast.success('Cliente excluído'); reload();
   };
 
-  const handleSync = async (client: Client, mode: 'incremental' | 'full' = 'full') => {
+  // Sync via server.js (/api/sync-cascade-full): full de cards+sessões+contatos e,
+  // ao final, marca first_sync_done=TRUE → o cron horário passa a incluir o cliente
+  // automaticamente. Substitui a edge function antiga (que dava "Failed to fetch").
+  const handleSync = async (client: Client) => {
     setSyncingClient(client.id);
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/sync-all-clients`, {
+      const resp = await fetch('/api/sync-cascade-full', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: client.id, mode }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Sync failed');
-      toast.success(`Sync ${mode === 'incremental' ? 'incremental' : 'completo'} do ${client.name} iniciado!`);
-    } catch (err: any) { toast.error(`Erro no sync: ${err.message}`); }
-    finally { setSyncingClient(null); }
+      if (!resp.body) { if (!resp.ok) throw new Error('Falha ao iniciar sync'); }
+      toast.info(`Sincronizando ${client.name}… pode levar alguns minutos.`);
+      // lê o stream ndjson até concluir
+      const reader = resp.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = '', errored: string | null = null;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n'); buf = lines.pop() || '';
+        for (const ln of lines) {
+          const t = ln.trim(); if (!t) continue;
+          try { const ev = JSON.parse(t); if (ev.type === 'error') errored = ev.error || 'erro'; } catch { /* ignore */ }
+        }
+      }
+      if (errored) throw new Error(errored);
+      toast.success(`✅ ${client.name} sincronizado! Já entrou no cron automático.`);
+      reload();
+    } catch (err: any) {
+      toast.error(`Erro no sync: ${err.message}`);
+    } finally { setSyncingClient(null); }
   };
 
   const copyLink = (companyId: string) => { navigator.clipboard.writeText(`${baseUrl}/d/${companyId}`); toast.success('Link copiado!'); };
@@ -386,11 +406,9 @@ const AdminClients = () => {
                       <Button size="sm" variant="outline" onClick={() => openEdit(client)}>
                         <Pencil className="mr-1 h-3 w-3" /> Editar
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleSync(client, 'incremental')} disabled={syncingClient === client.id}>
-                        {syncingClient === client.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />} Novos
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleSync(client, 'full')} disabled={syncingClient === client.id}>
-                        {syncingClient === client.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />} Sync Total
+                      <Button size="sm" variant={client.first_sync_done ? 'outline' : 'default'} onClick={() => handleSync(client)} disabled={syncingClient === client.id}>
+                        {syncingClient === client.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
+                        {client.first_sync_done ? 'Sincronizar' : '1ª Sincronização'}
                       </Button>
                       <Button size="sm" variant="outline" asChild>
                         <a href={`/d/${client.helena_company_id || client.slug}`} target="_blank" rel="noopener"><ExternalLink className="mr-1 h-3 w-3" /> Abrir</a>

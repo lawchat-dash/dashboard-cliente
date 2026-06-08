@@ -2235,6 +2235,7 @@ async function processOneClient(c, syncType) {
       error: result.error,
     });
   }
+  return result;
 }
 
 // Self-healing: preenche channel_phone/channel_name onde está NULL a partir do
@@ -2296,6 +2297,40 @@ async function runCronForAllClients(syncType) {
       })
     )
   );
+
+  // ── Onboarding automático: clientes ATIVOS ainda SEM 1º sync entram sozinhos.
+  // Faz um full (mode nightly) e marca first_sync_done=TRUE → na próxima rodada já
+  // caem no cron normal. Cap de 3 por rodada (cada full é pesado; cada um tem token
+  // próprio). Assim, importar/cadastrar cliente = ele começa a sincronizar sozinho.
+  try {
+    const pend = await pool.query(
+      `SELECT id, name, helena_api_key, panel_ids
+         FROM helena_clientes_crm
+        WHERE active = TRUE AND first_sync_done = FALSE
+          AND (sync_status IS NULL OR sync_status = 'idle')
+        ORDER BY created_at
+        LIMIT 3`
+    );
+    if (pend.rows.length) {
+      console.log(`  🆕 onboarding ${pend.rows.length} cliente(s) novo(s) (1º sync completo)`);
+      pushEvent("onboarding_start", { count: pend.rows.length });
+      await Promise.all(
+        pend.rows.map(async (nc) => {
+          const res = await processOneClient(nc, "nightly").catch((e) => {
+            console.error(`onboarding ${nc.name}:`, e.message);
+            return { status: "error" };
+          });
+          if (res && res.status === "success") {
+            await pool.query("SELECT helena_mark_sync_complete($1::uuid, TRUE)", [nc.id]).catch(() => {});
+            pushEvent("client_entered_cron", { clientId: nc.id, name: nc.name });
+            console.log(`  ✓ onboarded: ${nc.name} → entrou no cron`);
+          }
+        })
+      );
+    }
+  } catch (e) {
+    console.error("onboarding err:", e.message);
+  }
 
   console.log(`✓ ${syncType.toUpperCase()} finalizado\n`);
   pushEvent("cron_end", { syncType });

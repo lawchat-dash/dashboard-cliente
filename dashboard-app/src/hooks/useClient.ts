@@ -28,6 +28,7 @@ export interface Client {
   features: ClientFeatures;
   client_level: number;
   allowed_numbers?: string[] | null;
+  first_sync_done?: boolean | null;
 }
 
 export interface ClientPanel {
