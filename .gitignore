@@ -30,3 +30,6 @@ dashboard-app/bun.lockb
 Thumbs.db
 .vscode/
 .idea/
+
+# scripts temporários de manutenção (DB)
+frontend/_*.cjs
