@@ -2320,6 +2320,7 @@ async function runCronForAllClients(syncType) {
       FROM helena_clientes_crm
      WHERE active = TRUE
        AND first_sync_done = TRUE
+       AND COALESCE((features->>'dashboard')::boolean, true) = true
      ORDER BY name`
   );
   console.log(`  → ${r.rows.length} cliente(s) ativos rodando em PARALELO`);
@@ -2347,6 +2348,7 @@ async function runCronForAllClients(syncType) {
       `SELECT id, name, helena_api_key, panel_ids
          FROM helena_clientes_crm
         WHERE active = TRUE AND first_sync_done = FALSE
+          AND COALESCE((features->>'dashboard')::boolean, true) = true
           AND (sync_status IS NULL OR sync_status = 'idle')
         ORDER BY created_at
         LIMIT 3`
