@@ -1960,6 +1960,7 @@ const server = http.createServer(async (req, res) => {
 
         // 4. ATUALIZA last_synced_at = NOW() — assim cron horário pega delta a partir DAQUI
         await pool.query("SELECT helena_mark_sync_complete($1::uuid, TRUE)", [clientId]);
+        await recomputeMetrics(clientId);
         onProg({ stage: "complete", message: "✓ cliente marcado como pronto pro cron horário" });
         pushEvent("client_entered_cron", { clientId, name: client.name });
 
@@ -2246,6 +2247,8 @@ async function processOneClient(c, syncType) {
     // usando o channelId (sempre presente) + de-para das sessões já enriquecidas.
     // Sem isso, o filtro de Número só "enxergava" ~5% das sessões.
     await backfillChannelPhone(c.id);
+    // Recalcula o cache de métricas (preview rápido do admin) após cada sync.
+    await recomputeMetrics(c.id);
     console.log(`  ✓ ${c.name}: cards=${result.cards} sessions=${result.sessions} contacts=${result.contacts}`);
   } catch (e) {
     result.status = "error";
@@ -2295,6 +2298,17 @@ async function backfillChannelPhone(clientId) {
     if (r.rowCount > 0) console.log(`  📞 channel_phone backfill: ${r.rowCount} sessão(ões)`);
   } catch (e) {
     console.warn("backfillChannelPhone falhou:", e.message);
+  }
+}
+
+// Recalcula o cache de métricas do admin (RESUMO/preview rápido) nos 4 períodos.
+async function recomputeMetrics(clientId) {
+  try {
+    for (const p of ["all", "today", "7d", "30d"]) {
+      await pool.query("SELECT compute_client_metrics($1::uuid, $2)", [clientId, p]);
+    }
+  } catch (e) {
+    console.warn("recomputeMetrics falhou:", e.message);
   }
 }
 
