@@ -120,14 +120,14 @@ const Sidebar = ({ features, basePath = '', clientId, lastUpdated, currentUserNa
                     </NavLink>
                   ))}
                 </nav>
-                {onSplitConfirm && onSplitClose && (
+                {onSplitConfirm && onSplitClose && features?.split_screen === true && (
                   <div className="px-3 mt-1">
                     <div className="border-t border-sidebar-border pt-2">
                       <SplitScreenSidebarItem features={features} splitPages={splitPages} onConfirm={(pages) => { onSplitConfirm(pages); setMobileOpen(false); }} onClose={() => { onSplitClose(); setMobileOpen(false); }} />
                     </div>
                   </div>
                 )}
-                {clientId && (
+                {clientId && features?.notificacoes !== false && (
                   <div className="border-t border-sidebar-border p-3">
                     <NotificationSettings clientId={clientId} />
                   </div>
@@ -222,7 +222,7 @@ const Sidebar = ({ features, basePath = '', clientId, lastUpdated, currentUserNa
       </nav>
 
       {/* Split Screen */}
-      {onSplitConfirm && onSplitClose && (
+      {onSplitConfirm && onSplitClose && features?.split_screen === true && (
         <div className="px-2 mt-1">
           <div className="border-t border-sidebar-border pt-2">
             <SplitScreenSidebarItem features={features} splitPages={splitPages} onConfirm={onSplitConfirm} onClose={onSplitClose} collapsed={collapsed} />
@@ -232,7 +232,7 @@ const Sidebar = ({ features, basePath = '', clientId, lastUpdated, currentUserNa
 
       {/* Bottom section */}
       <div className="mt-auto flex flex-col gap-0.5 w-full border-t border-sidebar-border px-2 py-3">
-        {clientId && (
+        {clientId && features?.notificacoes !== false && (
           <NotificationSettings clientId={clientId} collapsed={collapsed} />
         )}
         <button

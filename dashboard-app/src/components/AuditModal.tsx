@@ -317,14 +317,11 @@ const AuditModal = ({ open, onOpenChange, mode, cards, sessions, initialStage }:
                     const name = getContactName(card);
                     const phone = getContactPhone(card);
                     const score = computeScore(stage, tags.length, phone !== '—', !!campaign && campaign !== '—');
-                    const prio = priorityOf(score, stage);
                     const sc = scoreColor(score);
                     const pal = avatarPalette(name);
 
                     return (
                     <div key={card.id} className={`relative ${isPreviewActive ? 'bg-primary/[0.06]' : ''}`}>
-                      {/* Barra de prioridade lateral */}
-                      <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full ${prio.dot} ${prio.label === 'Baixa' ? 'opacity-30' : 'opacity-90'}`} />
                       <button
                         onClick={() => {
                           setExpandedCardId(isExpanded ? null : card.id);
@@ -339,9 +336,6 @@ const AuditModal = ({ open, onOpenChange, mode, cards, sessions, initialStage }:
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold text-foreground truncate">{name}</p>
-                            <span className={`flex items-center gap-1 text-[10px] font-medium ${prio.color} shrink-0`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${prio.dot}`} />{prio.label}
-                            </span>
                           </div>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
                             <Phone className="h-3 w-3 shrink-0" />

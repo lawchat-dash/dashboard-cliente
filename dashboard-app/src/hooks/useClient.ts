@@ -15,6 +15,7 @@ export interface ClientFeatures {
   templates_api?: boolean;
   notificacoes?: boolean;
   supervisao?: boolean;
+  split_screen?: boolean;
 }
 
 export interface Client {

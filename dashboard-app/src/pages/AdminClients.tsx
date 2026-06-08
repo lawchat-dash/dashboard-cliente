@@ -68,6 +68,7 @@ const AdminClients = () => {
     dashboard: true, pipeline: true, campanhas: true, auditoria: true,
     ao_vivo: true, contratos: true, comparar: true, follow_up: true,
     notificacoes: true, supervisao: true, ia: false, templates_api: false,
+    split_screen: false,
   };
   const [features, setFeatures] = useState<ClientFeatures>({ ...DEFAULT_FEATURES });
   const [allowedNumbers, setAllowedNumbers] = useState<string[]>([]);
@@ -510,7 +511,8 @@ const AdminClients = () => {
                   { key: 'follow_up' as const, label: '📞 Follow-up' },
                   { key: 'notificacoes' as const, label: '🔔 Central de Notificações' },
                   { key: 'supervisao' as const, label: '🛡️ Supervisão' },
-                  { key: 'ia' as const, label: '🤖 Agente IA' },
+                  { key: 'ia' as const, label: '🤖 Agente de Vendas (IA)' },
+                  { key: 'split_screen' as const, label: '🪟 Dividir Tela' },
                   { key: 'templates_api' as const, label: '📋 Templates API Oficial' },
                 ] as const).map(feat => (
                   <div key={feat.key} className="flex items-center gap-2">

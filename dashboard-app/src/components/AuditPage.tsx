@@ -448,7 +448,6 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
               const name = getContactName(card);
               const phone = getContactPhone(card);
               const score = computeScore(stage, tags.length, phone !== '—', !!campaign && campaign !== '—');
-              const prio = priorityOf(score, stage);
               const sc = scoreColor(score);
               const pal = avatarPalette(name);
               const isSyncing = syncingCardId === card.id;
@@ -461,9 +460,6 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
                   transition={{ delay: Math.min(ci * 0.025, 0.4) }}
                   className={`relative ${isPreviewActive ? 'bg-primary/[0.06]' : ''}`}
                 >
-                  {/* Barra de prioridade lateral */}
-                  <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full ${prio.dot} ${prio.label === 'Baixa' ? 'opacity-30' : 'opacity-90'}`} />
-
                   <button
                     onClick={() => {
                       setExpandedCardId(isExpanded ? null : card.id);
@@ -480,11 +476,6 @@ const AuditPage = ({ cards, sessions }: AuditPageProps) => {
                     <div className="flex-1 min-w-0 space-y-0.5">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-foreground leading-snug truncate">{name}</p>
-                        {/* Prioridade */}
-                        <span className={`flex items-center gap-1 text-[10px] font-medium ${prio.color} shrink-0`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${prio.dot}`} />
-                          {prio.label}
-                        </span>
                       </div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
                         <Phone className="h-3 w-3 shrink-0" />
