@@ -2253,6 +2253,24 @@ async function processOneClient(c, syncType) {
       () => {}
     );
     result.contracts = ctrRes?.counts?.withNote || 0;
+
+    // REFRESH POR-ID DOS CARDS ALTERADOS (só hourly):
+    // Quando um card muda, upsertCards marca sessions_synced=FALSE. Aqui buscamos a(s)
+    // sessão(ões) desses cards DIRETO por id (/chat/v2/session/{id} com IncludeDetails),
+    // trazendo tag/etapa/agente/UTM FRESCOS — independente da idade do lead (de hoje ou
+    // antigo, se teve update entra igual). É barato: só os poucos cards que mudaram.
+    // Roda ANTES do bulk (o bulk depois marca sessions_synced=TRUE e pega leads 100% novos).
+    // No nightly não roda: o full já varre tudo.
+    if (syncType === "hourly") {
+      try {
+        const freshRes = await syncSessions(c, { limit: 80 }, () => {});
+        result.fresh = freshRes?.counts?.sessions || 0;
+        if (result.fresh) console.log(`  ↺ ${c.name}: ${result.fresh} sessão(ões) de cards alterados refrescadas por-id`);
+      } catch (e) {
+        console.warn(`  refresh por-id falhou (${c.name}):`, e.message);
+      }
+    }
+
     // SESSÕES via BULK (/chat/v2/session paginado):
     //   - hourly  → incremental: começa nas páginas mais recentes e para cedo (leve)
     //   - nightly → full: varre TODAS as páginas (lê totalPages fresco, adapta a qualquer cliente)
