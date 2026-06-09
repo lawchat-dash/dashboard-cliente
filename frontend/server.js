@@ -39,8 +39,13 @@ const pool = new Pool({
   password: process.env.DB_PASS,
   database: process.env.DB_NAME || "postgres",
   ssl: { rejectUnauthorized: false },
-  max: 30,  // suporta vários clientes rodando em paralelo
-  idleTimeoutMillis: 30000,
+  // O pooler do Supabase (session mode) limita a 15 conexões. max:30 estourava
+  // ("max clients reached"). Mantemos ABAIXO de 15 (com folga pra 2ª instância
+  // durante deploy + scripts admin). O pg Pool ENFILEIRA queries além do max em
+  // vez de abrir conexão nova → nenhum cliente falha, só compartilham conexões.
+  max: 10,
+  idleTimeoutMillis: 10000,            // libera conexão ociosa rápido
+  connectionTimeoutMillis: 15000,      // não trava pra sempre esperando conexão
 });
 
 pool.on("error", (err) => console.error("PG pool error:", err.message));
@@ -2362,21 +2367,28 @@ async function runCronForAllClients(syncType) {
        AND COALESCE((features->>'dashboard')::boolean, true) = true
      ORDER BY name`
   );
-  console.log(`  → ${r.rows.length} cliente(s) ativos rodando em PARALELO`);
-  pushEvent("cron_clients_found", { syncType, count: r.rows.length, parallel: true });
+  // Roda em LOTES (não todos de uma vez): o pooler do Supabase limita conexões,
+  // e ~20+ clientes 100% paralelos estouravam o pool ("max clients reached").
+  // CRON_BATCH clientes por vez mantém o uso de conexões baixo e ainda é paralelo
+  // dentro do lote. Cada cliente tem API key/rate-limit próprios.
+  const CRON_BATCH = parseInt(process.env.CRON_BATCH, 10) || 5;
+  console.log(`  → ${r.rows.length} cliente(s) ativos em lotes de ${CRON_BATCH}`);
+  pushEvent("cron_clients_found", { syncType, count: r.rows.length, batch: CRON_BATCH });
 
-  // Roda TODOS em paralelo — cada cliente tem API key e rate limit independentes
-  await Promise.all(
-    r.rows.map((c) =>
-      processOneClient(c, syncType).catch((e) => {
-        console.error(`Erro em ${c.name}:`, e.message);
-        pushEvent("client_sync_end", {
-          clientId: c.id, name: c.name, syncType,
-          status: "error", error: e.message,
-        });
-      })
-    )
-  );
+  for (let i = 0; i < r.rows.length; i += CRON_BATCH) {
+    const lote = r.rows.slice(i, i + CRON_BATCH);
+    await Promise.all(
+      lote.map((c) =>
+        processOneClient(c, syncType).catch((e) => {
+          console.error(`Erro em ${c.name}:`, e.message);
+          pushEvent("client_sync_end", {
+            clientId: c.id, name: c.name, syncType,
+            status: "error", error: e.message,
+          });
+        })
+      )
+    );
+  }
 
   // ── Onboarding automático: clientes ATIVOS ainda SEM 1º sync entram sozinhos.
   // Faz um full (mode nightly) e marca first_sync_done=TRUE → na próxima rodada já
