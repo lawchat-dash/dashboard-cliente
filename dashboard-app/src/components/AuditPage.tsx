@@ -283,7 +283,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
             <p className="text-xs text-muted-foreground">{filteredCards.length} leads</p>
           </div>
           <div className="relative flex-1 min-h-0">
-          <ScrollArea className="absolute inset-0">
+          <ScrollArea className="!absolute inset-0">
             <div className="divide-y divide-border/50">
               {filteredCards.length === 0 && (
                 <div className="px-4 py-10 text-center text-muted-foreground text-sm">Nenhum lead encontrado</div>
@@ -555,7 +555,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
             tenha ALTURA DEFINIDA (o height:100% dele não resolve quando o Root só
             tem flex-grow) → sem isso a lista crescia e não rolava. */}
         <div className="relative flex-1 min-h-0">
-        <ScrollArea className="absolute inset-0">
+        <ScrollArea className="!absolute inset-0">
           <div className="divide-y divide-border/50">
             {filteredCards.length === 0 && (
               <div className="px-5 py-10 text-center text-muted-foreground text-sm">Nenhum lead encontrado</div>
