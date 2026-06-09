@@ -43,9 +43,12 @@ const pool = new Pool({
   // ("max clients reached"). Mantemos ABAIXO de 15 (com folga pra 2ª instância
   // durante deploy + scripts admin). O pg Pool ENFILEIRA queries além do max em
   // vez de abrir conexão nova → nenhum cliente falha, só compartilham conexões.
-  max: 10,
-  idleTimeoutMillis: 10000,            // libera conexão ociosa rápido
-  connectionTimeoutMillis: 15000,      // não trava pra sempre esperando conexão
+  // Pooler do Supabase (session mode) = 15 conexões TOTAIS. Mantemos max baixo p/
+  // caber mesmo com 2 instâncias durante o overlap de deploy (2×6=12 < 15) + scripts.
+  // pg Pool ENFILEIRA além do max (não falha); idle curto libera rápido.
+  max: 6,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 20000,      // espera conexão livre antes de desistir
 });
 
 pool.on("error", (err) => console.error("PG pool error:", err.message));
@@ -2206,6 +2209,9 @@ const cronState = {
   lastNightlyAt: null,
   hourlyRunning: false,
   nightlyRunning: false,
+  // Trava o tick até o boot terminar (evita o cron disparar durante a subida,
+  // competindo por conexões enquanto o DB ainda está conectando).
+  booted: false,
   // Chaves de "já rodei nesta janela" — tornam o agendador auto-curável
   // (imune ao drift do setInterval e a ticks perdidos sob carga).
   lastHourlyKey: null,   // "YYYY-MM-DD-HH"
@@ -2371,7 +2377,7 @@ async function runCronForAllClients(syncType) {
   // e ~20+ clientes 100% paralelos estouravam o pool ("max clients reached").
   // CRON_BATCH clientes por vez mantém o uso de conexões baixo e ainda é paralelo
   // dentro do lote. Cada cliente tem API key/rate-limit próprios.
-  const CRON_BATCH = parseInt(process.env.CRON_BATCH, 10) || 5;
+  const CRON_BATCH = parseInt(process.env.CRON_BATCH, 10) || 4;
   console.log(`  → ${r.rows.length} cliente(s) ativos em lotes de ${CRON_BATCH}`);
   pushEvent("cron_clients_found", { syncType, count: r.rows.length, batch: CRON_BATCH });
 
@@ -2449,6 +2455,7 @@ async function safeRunCron(type) {
 // atual com a última rodada. Se um tick foi perdido, o próximo ainda vê uma
 // chave nova e roda → nunca fica horas sem sincronizar.
 setInterval(() => {
+  if (!cronState.booted) return; // não dispara nada antes do boot concluir
   const now = new Date();
   const hk = hourKey(now);
   const dk = dayKey(now);
@@ -2521,20 +2528,41 @@ const cronEndpoints = (req, res) => {
   return false;
 };
 
-pool.query("SELECT 1").then(() => ensureSchema()).then(async () => {
-  // Limpa logs órfãos: se o server foi reiniciado durante um sync, a linha
-  // ficou "running" pra sempre. No boot, nada está rodando → marca como
-  // interrompido (senão a UI mostra syncs "rodando" há horas, sem fim).
-  try {
-    const orphans = await pool.query(
-      `UPDATE helena_sync_log
-          SET status = 'interrupted', finished_at = NOW()
-        WHERE status = 'running'
-        RETURNING id`
-    );
-    if (orphans.rowCount > 0) console.log(`  ⚠ ${orphans.rowCount} log(s) órfão(s) marcados como 'interrupted'`);
-  } catch (e) {
-    console.warn("Limpeza de logs órfãos falhou:", e.message);
+// BOOT resiliente: tenta conectar com retry/backoff e SEMPRE sobe o HTTP.
+// Antes, um erro de conexão no boot (ex.: pooler do Supabase em "max clients"
+// durante o overlap de deploy) caía em process.exit(1) → easypanel reiniciava →
+// falhava de novo → CRASH LOOP, e cada reboot abria mais conexões, piorando tudo.
+// Agora: nunca matamos o processo por DB; a instância nova espera a antiga liberar.
+async function boot() {
+  let connected = false;
+  for (let i = 1; i <= 12 && !connected; i++) {
+    try {
+      await pool.query("SELECT 1");
+      connected = true;
+    } catch (e) {
+      console.error(`⏳ DB indisponível (tentativa ${i}/12): ${e.message} — novo retry em 5s`);
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
+
+  if (connected) {
+    try { await ensureSchema(); } catch (e) { console.warn("⚠ ensureSchema falhou:", e.message); }
+    // Limpa logs órfãos: se o server foi reiniciado durante um sync, a linha
+    // ficou "running" pra sempre. No boot, nada está rodando → marca como
+    // interrompido (senão a UI mostra syncs "rodando" há horas, sem fim).
+    try {
+      const orphans = await pool.query(
+        `UPDATE helena_sync_log
+            SET status = 'interrupted', finished_at = NOW()
+          WHERE status = 'running'
+          RETURNING id`
+      );
+      if (orphans.rowCount > 0) console.log(`  ⚠ ${orphans.rowCount} log(s) órfão(s) marcados como 'interrupted'`);
+    } catch (e) {
+      console.warn("Limpeza de logs órfãos falhou:", e.message);
+    }
+  } else {
+    console.error("⚠ Sem DB após 12 tentativas — subindo o HTTP mesmo assim (cron/queries tentam de novo; sem crash loop).");
   }
 
   // Noturno é pesado (full/all): NÃO deve disparar a cada restart durante o dia.
@@ -2563,6 +2591,7 @@ pool.query("SELECT 1").then(() => ensureSchema()).then(async () => {
   console.log("  ╚════════════════════════════════════════════════╝");
   console.log("");
   server.listen(PORT);
+  cronState.booted = true; // libera o tick do cron só agora
 
   // Resync ÚNICO ~90s após o boot: garante dados frescos depois de qualquer
   // deploy/restart sem competir com a subida (o dashboard lê do Supabase REST,
@@ -2574,8 +2603,11 @@ pool.query("SELECT 1").then(() => ensureSchema()).then(async () => {
       safeRunCron("hourly").catch((e) => console.error("Resync pós-boot err:", e));
     }
   }, 90_000);
-}).catch((e) => {
-  console.error("❌ Erro conectando ao DB:", e.message);
-  console.error("Verifica DB_HOST/DB_USER/DB_PASS no .env");
-  process.exit(1);
+}
+
+boot().catch((e) => {
+  // Nunca derruba o processo por erro de boot (evita crash loop). Sobe o HTTP
+  // pra pelo menos /api/health responder; o cron/queries tentam de novo sozinhos.
+  console.error("❌ Erro no boot (seguindo mesmo assim):", e.message);
+  try { server.listen(PORT); } catch {}
 });
