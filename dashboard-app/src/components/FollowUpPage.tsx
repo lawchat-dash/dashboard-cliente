@@ -2306,26 +2306,11 @@ const FollowUpPage = ({ cards, sessions, clientId, features }: FollowUpPageProps
                     </button>
                   </div>
                 </div>
-                {/* O chat da Helena exige login e não pode ser embutido (cookie de
-                    terceiro bloqueado pelo navegador). Card limpo que abre em nova aba. */}
-                <div className="flex items-center justify-center p-8">
-                  <div className="max-w-sm text-center space-y-4">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                      <MessageCircle className="h-8 w-8 text-primary" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-base font-semibold text-foreground">{previewLeadData?.contact_name || 'Conversa'}</p>
-                      {previewLeadData?.contact_phone && <p className="text-sm text-muted-foreground">{previewLeadData.contact_phone}</p>}
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      A conversa abre no atendimento da Helena (é preciso estar logado). Por segurança do navegador, ela não pode ser exibida aqui dentro.
-                    </p>
-                    <a href={activePreviewUrl} target="_blank" rel="noopener noreferrer"
-                       className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
-                      <ExternalLink className="h-4 w-4" /> Abrir conversa
-                    </a>
-                  </div>
-                </div>
+                <iframe
+                  src={activePreviewUrl}
+                  className="w-full h-[500px] border-0"
+                  title="Chat Preview"
+                />
               </motion.div>
             )}
 

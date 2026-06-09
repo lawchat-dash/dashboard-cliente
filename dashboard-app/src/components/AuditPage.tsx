@@ -264,24 +264,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </a>
           </div>
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="max-w-xs text-center space-y-4">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                <MessageCircle className="h-8 w-8 text-primary" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-base font-semibold text-foreground">{previewCard ? getContactName(previewCard) : 'Conversa'}</p>
-                {previewCard && <p className="text-sm text-muted-foreground">{getContactPhone(previewCard)}</p>}
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                A conversa abre no atendimento da Helena (é preciso estar logado). Por segurança do navegador, ela não pode ser exibida aqui dentro.
-              </p>
-              <a href={activePreviewUrl} target="_blank" rel="noopener noreferrer"
-                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
-                <ExternalLink className="h-4 w-4" /> Abrir conversa
-              </a>
-            </div>
-          </div>
+          <iframe key={previewCardId} src={activePreviewUrl} className="flex-1 w-full bg-background" title="Chat Preview" />
         </div>
       );
     }
@@ -771,26 +754,14 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               </button>
             </div>
           </div>
-          {/* O chat da Helena (wts.chat) exige login e não pode ser embutido em iframe
-              (o navegador bloqueia cookie de terceiro → ficava em branco). Em vez de um
-              iframe quebrado, mostramos um card limpo que abre a conversa em nova aba. */}
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="max-w-sm text-center space-y-4">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                <MessageCircle className="h-8 w-8 text-primary" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-base font-semibold text-foreground">{previewCard ? getContactName(previewCard) : 'Conversa'}</p>
-                {previewCard && <p className="text-sm text-muted-foreground">{getContactPhone(previewCard)}</p>}
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                A conversa abre no atendimento da Helena (é preciso estar logado). Por segurança do navegador, ela não pode ser exibida aqui dentro.
-              </p>
-              <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer"
-                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
-                <ExternalLink className="h-4 w-4" /> Abrir conversa
-              </a>
-            </div>
+          {/* Preview inline da conversa (iframe). Com a altura do modal/coluna já
+              corrigida, o chat renderiza aqui dentro. Fallback discreto no rodapé. */}
+          <iframe key={previewCardId} src={activePreviewUrl!} className="flex-1 w-full bg-background" title="Chat Preview" />
+          <div className="flex items-center justify-center gap-1.5 border-t border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+            <span>Não carregou?</span>
+            <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
+              <ExternalLink className="h-3 w-3" /> Abrir em nova aba
+            </a>
           </div>
         </div>
       ) : (
