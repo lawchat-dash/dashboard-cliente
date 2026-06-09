@@ -24,7 +24,9 @@ const AuditModal = ({ open, onOpenChange, mode, cards, sessions, initialStage }:
         // !flex !flex-col: o DialogContent base é `grid`, e dentro de grid com linhas
         // `auto` o h-full do filho colapsa pro tamanho do conteúdo (lista sem scroll,
         // preview sem altura). Forçamos flex-col p/ a altura (92vh) propagar de verdade.
-        className="max-w-[min(1500px,96vw)] w-[96vw] h-[92vh] p-0 gap-0 overflow-hidden border-border bg-transparent shadow-2xl sm:rounded-2xl !flex !flex-col"
+        // [&>button]:hidden: esconde o X padrão do shadcn (o único <button> filho direto)
+        // — usamos o nosso próprio X dentro da AuditPage pra não ficarem DOIS X no canto.
+        className="max-w-[min(1500px,96vw)] w-[96vw] h-[92vh] p-0 gap-0 overflow-hidden border-border bg-transparent shadow-2xl sm:rounded-2xl !flex !flex-col [&>button]:hidden"
       >
         <DialogTitle className="sr-only">Auditoria de Leads</DialogTitle>
         <div className="flex-1 min-h-0 w-full">
@@ -35,6 +37,7 @@ const AuditModal = ({ open, onOpenChange, mode, cards, sessions, initialStage }:
               initialStage={initialStage}
               mode={mode}
               embedded
+              onClose={() => onOpenChange(false)}
             />
           )}
         </div>

@@ -79,9 +79,11 @@ interface AuditPageProps {
   mode?: 'all' | 'closed';
   /** Quando renderizado dentro de um modal: ocupa a altura do container (h-full). */
   embedded?: boolean;
+  /** Fecha o modal (quando embedded). Renderiza um único X no header da lista. */
+  onClose?: () => void;
 }
 
-const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = false }: AuditPageProps) => {
+const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = false, onClose }: AuditPageProps) => {
   const { classify } = useClassify();
   const isMobile = useIsMobile();
   const resolvedInitialStage = initialStage || (mode === 'closed' ? 'CONTRATO FECHADO' : null);
@@ -345,6 +347,11 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
           <ClipboardCheck className="h-5 w-5 text-primary" />
           <span className="text-base font-bold text-foreground">Auditoria</span>
+          {embedded && onClose && (
+            <button onClick={onClose} aria-label="Fechar" className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
         <div className="flex flex-col gap-1 p-3">
           <button
@@ -444,16 +451,24 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               </h2>
               <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{filteredCards.length} leads</span>
             </div>
-            <div className="relative hidden sm:block w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar nome, telefone, tag..."
-                className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-9 pr-12 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background transition-all"
-              />
-              <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+            <div className="flex items-center gap-2">
+              <div className="relative hidden sm:block w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  ref={searchInputRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar nome, telefone, tag..."
+                  className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-9 pr-12 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background transition-all"
+                />
+                <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+              </div>
+              {embedded && onClose && (
+                <button onClick={onClose} title="Fechar" aria-label="Fechar"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -702,9 +717,13 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer" className="rounded-md p-1 hover:bg-muted transition-colors">
                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
               </a>
-              <button onClick={() => setPreviewCardId(null)} className="rounded-md p-1 hover:bg-muted transition-colors">
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
+              {/* No modal (embedded) o próprio Dialog já tem um X que fecha tudo —
+                  esconde este pra não ficar "dois X" no mesmo canto. */}
+              {!embedded && (
+                <button onClick={() => setPreviewCardId(null)} className="rounded-md p-1 hover:bg-muted transition-colors">
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
             </div>
           </div>
           <iframe key={previewCardId} src={activePreviewUrl!} className="flex-1 w-full bg-background" title="Chat Preview" />
