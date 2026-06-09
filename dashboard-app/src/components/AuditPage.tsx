@@ -390,7 +390,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
   return (
     <div className={`flex ${embedded ? 'h-full' : 'h-[calc(100vh-140px)]'} rounded-xl border border-border bg-card shadow-card overflow-hidden`}>
       {/* Stage sidebar */}
-      <div className="flex flex-col gap-1 border-r border-border px-3 py-5 bg-muted/30 min-w-[170px] max-w-[200px]">
+      <div className="flex flex-col gap-1 border-r border-border px-3 py-5 bg-muted/30 min-w-[170px] max-w-[200px] min-h-0 overflow-y-auto">
         <div className="flex items-center gap-2 mb-3 px-2">
           <ClipboardCheck className="h-5 w-5 text-primary" />
           <span className="text-sm font-bold text-foreground">Auditoria</span>
@@ -435,7 +435,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
       </div>
 
       {/* Lead list */}
-      <div className={`flex-1 flex flex-col min-w-0 ${hasPreview ? 'max-w-[400px]' : ''} border-r border-border`}>
+      <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${hasPreview ? 'max-w-[400px]' : ''} border-r border-border`}>
         <div className="px-5 pt-4 pb-3 border-b border-border space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -456,7 +456,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
             </div>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+          <div className="flex flex-wrap items-center gap-2">
             {([
               { key: 'all', label: 'Todos', icon: ClipboardCheck },
               { key: 'recent', label: 'Recentes', icon: Clock },
@@ -580,8 +580,8 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
                       {tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-0.5">
                           {tags.slice(0, 2).map(tag => (
-                            <span key={tag.id} className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
-                              <Tag className="h-2 w-2" />{tag.name}
+                            <span key={tag.id} title={tag.name} className="inline-flex max-w-[150px] items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+                              <Tag className="h-2 w-2 shrink-0" /><span className="truncate">{tag.name}</span>
                             </span>
                           ))}
                           {tags.length > 2 && <span className="text-[9px] text-muted-foreground self-center">+{tags.length - 2}</span>}
@@ -639,8 +639,8 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
                           {tags.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 pt-1">
                               {tags.map(tag => (
-                                <span key={tag.id} className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                                  <Tag className="h-2.5 w-2.5" />{tag.name}
+                                <span key={tag.id} title={tag.name} className="inline-flex max-w-[200px] items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                                  <Tag className="h-2.5 w-2.5 shrink-0" /><span className="truncate">{tag.name}</span>
                                 </span>
                               ))}
                             </div>
@@ -682,7 +682,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
 
       {/* Chat preview panel */}
       {hasPreview ? (
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -708,6 +708,15 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
             </div>
           </div>
           <iframe key={previewCardId} src={activePreviewUrl!} className="flex-1 w-full bg-background" title="Chat Preview" />
+          {/* Fallback sempre visível: a Helena exige login e o navegador bloqueia
+              cookie de terceiro dentro do iframe → às vezes fica em branco. */}
+          <div className="flex items-center justify-center gap-2 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <span>Conversa não apareceu?</span>
+            <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer"
+               className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+              <ExternalLink className="h-3.5 w-3.5" /> Abrir em nova aba
+            </a>
+          </div>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
