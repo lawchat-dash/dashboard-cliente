@@ -100,6 +100,8 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [tagOpen, setTagOpen] = useState(false);
   const [tagSearch, setTagSearch] = useState('');
+  // Renderiza a lista em blocos (evita travar com milhares de leads em "Todos").
+  const [visibleCount, setVisibleCount] = useState(120);
   const tagBoxRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -191,6 +193,9 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
     return list;
   }, [cards, activeStage, classify, quickFilter, tagFilter, search, cardContactTags, sessionMap]);
 
+  // Volta a lista pro começo quando muda etapa/filtro/busca.
+  useEffect(() => { setVisibleCount(120); }, [activeStage, quickFilter, tagFilter, search]);
+
   const getPreviewUrl = (cardId: string): string | null => {
     const session = sessionMap.get(cardId);
     if (!session?.sessionDetailFull) return null;
@@ -259,7 +264,24 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </a>
           </div>
-          <iframe key={previewCardId} src={activePreviewUrl} className="flex-1 w-full bg-background" title="Chat Preview" />
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="max-w-xs text-center space-y-4">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                <MessageCircle className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-semibold text-foreground">{previewCard ? getContactName(previewCard) : 'Conversa'}</p>
+                {previewCard && <p className="text-sm text-muted-foreground">{getContactPhone(previewCard)}</p>}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                A conversa abre no atendimento da Helena (é preciso estar logado). Por segurança do navegador, ela não pode ser exibida aqui dentro.
+              </p>
+              <a href={activePreviewUrl} target="_blank" rel="noopener noreferrer"
+                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
+                <ExternalLink className="h-4 w-4" /> Abrir conversa
+              </a>
+            </div>
+          </div>
         </div>
       );
     }
@@ -282,7 +304,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               {filteredCards.length === 0 && (
                 <div className="px-4 py-10 text-center text-muted-foreground text-sm">Nenhum lead encontrado</div>
               )}
-              {filteredCards.map((card) => {
+              {filteredCards.slice(0, visibleCount).map((card) => {
                 const isExpanded = expandedCardId === card.id;
                 const previewUrl = getPreviewUrl(card.id);
                 const campaign = extractCampaign(card);
@@ -335,6 +357,14 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
                   </div>
                 );
               })}
+              {filteredCards.length > visibleCount && (
+                <div className="px-4 py-4 text-center">
+                  <button onClick={() => setVisibleCount(v => v + 200)}
+                    className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    Ver mais ({filteredCards.length - visibleCount} restantes)
+                  </button>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </div>
@@ -541,7 +571,7 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
             {filteredCards.length === 0 && (
               <div className="px-5 py-10 text-center text-muted-foreground text-sm">Nenhum lead encontrado</div>
             )}
-            {filteredCards.map((card, ci) => {
+            {filteredCards.slice(0, visibleCount).map((card, ci) => {
               const isExpanded = expandedCardId === card.id;
               const previewUrl = getPreviewUrl(card.id);
               const campaign = extractCampaign(card);
@@ -691,6 +721,16 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
                 </motion.div>
               );
             })}
+            {filteredCards.length > visibleCount && (
+              <div className="px-5 py-4 text-center">
+                <button
+                  onClick={() => setVisibleCount(v => v + 200)}
+                  className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  Ver mais ({filteredCards.length - visibleCount} restantes)
+                </button>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>
@@ -714,27 +754,36 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer" className="rounded-md p-1 hover:bg-muted transition-colors">
+              <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer" className="rounded-md p-1 hover:bg-muted transition-colors" title="Abrir em nova aba">
                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
               </a>
-              {/* No modal (embedded) o próprio Dialog já tem um X que fecha tudo —
-                  esconde este pra não ficar "dois X" no mesmo canto. */}
-              {!embedded && (
-                <button onClick={() => setPreviewCardId(null)} className="rounded-md p-1 hover:bg-muted transition-colors">
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              )}
+              {/* Fecha só o preview (volta pra lista cheia). O X de fechar o modal fica
+                  no header da lista, em posição distinta — não duplica. */}
+              <button onClick={() => setPreviewCardId(null)} className="rounded-md p-1 hover:bg-muted transition-colors" title="Fechar conversa">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
             </div>
           </div>
-          <iframe key={previewCardId} src={activePreviewUrl!} className="flex-1 w-full bg-background" title="Chat Preview" />
-          {/* Fallback sempre visível: a Helena exige login e o navegador bloqueia
-              cookie de terceiro dentro do iframe → às vezes fica em branco. */}
-          <div className="flex items-center justify-center gap-2 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            <span>Conversa não apareceu?</span>
-            <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer"
-               className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-              <ExternalLink className="h-3.5 w-3.5" /> Abrir em nova aba
-            </a>
+          {/* O chat da Helena (wts.chat) exige login e não pode ser embutido em iframe
+              (o navegador bloqueia cookie de terceiro → ficava em branco). Em vez de um
+              iframe quebrado, mostramos um card limpo que abre a conversa em nova aba. */}
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="max-w-sm text-center space-y-4">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                <MessageCircle className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-semibold text-foreground">{previewCard ? getContactName(previewCard) : 'Conversa'}</p>
+                {previewCard && <p className="text-sm text-muted-foreground">{getContactPhone(previewCard)}</p>}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                A conversa abre no atendimento da Helena (é preciso estar logado). Por segurança do navegador, ela não pode ser exibida aqui dentro.
+              </p>
+              <a href={activePreviewUrl!} target="_blank" rel="noopener noreferrer"
+                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
+                <ExternalLink className="h-4 w-4" /> Abrir conversa
+              </a>
+            </div>
           </div>
         </div>
       ) : (
