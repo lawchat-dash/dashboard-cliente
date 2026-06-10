@@ -1386,7 +1386,9 @@ const server = http.createServer(async (req, res) => {
       const r = await pool.query(`
         SELECT
           c.id, c.name, c.slug, c.active,
-          c.helena_api_key, c.helena_company_id, c.panel_ids, c.panels_config,
+          -- helena_api_key NUNCA é retornada (segredo). Só sinaliza se existe.
+          (c.helena_api_key IS NOT NULL AND c.helena_api_key <> '') AS has_api_key,
+          c.helena_company_id, c.panel_ids, c.panels_config,
           c.nivel_atencao, c.features, c.numeros_dashboard, c.step_mappings, c.notes,
           c.first_sync_done, c.last_synced_at, c.last_full_sync_at,
           c.created_at, c.updated_at,
@@ -1441,7 +1443,8 @@ const server = http.createServer(async (req, res) => {
             b.active !== false,
           ]
         );
-        return json(res, { client: r.rows[0] });
+        const created = r.rows[0]; delete created.helena_api_key; // nunca expor o segredo
+        return json(res, { client: created });
       } catch (e) { return json(res, { error: e.message }, 500); }
     });
     return;
@@ -1472,7 +1475,8 @@ const server = http.createServer(async (req, res) => {
           values
         );
         if (!r.rows.length) throw new Error("cliente não encontrado");
-        return json(res, { client: r.rows[0] });
+        const updated = r.rows[0]; delete updated.helena_api_key; // nunca expor o segredo
+        return json(res, { client: updated });
       } catch (e) { return json(res, { error: e.message }, 500); }
     });
     return;
