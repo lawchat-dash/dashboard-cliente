@@ -458,35 +458,38 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
 
       {/* Lead list */}
       <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${hasPreview ? 'max-w-[400px]' : ''} border-r border-border`}>
-        <div className="px-5 pt-4 pb-3 border-b border-border space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold tracking-tight text-foreground">
+        <div className="px-4 pt-3 pb-2.5 border-b border-border space-y-2.5">
+          {/* Linha 1: título + contador + fechar */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="truncate text-base font-bold tracking-tight text-foreground">
                 {activeStage ? getStepDisplayName(activeStage) : 'Todos os Leads'}
               </h2>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{filteredCards.length} leads</span>
+              <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{filteredCards.length}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative hidden sm:block w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  ref={searchInputRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar nome, telefone, tag..."
-                  className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-9 pr-12 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background transition-all"
-                />
-                <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
-              </div>
-              {embedded && onClose && (
-                <button onClick={onClose} title="Fechar" aria-label="Fechar"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                  <X className="h-5 w-5" />
-                </button>
-              )}
-            </div>
+            {embedded && onClose && (
+              <button onClick={onClose} title="Fechar" aria-label="Fechar"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Linha 2: busca em largura total */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              ref={searchInputRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar nome, telefone, tag..."
+              className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background transition-all"
+            />
+          </div>
+          {/* Linha 3: filtros rápidos — UMA linha com rolagem horizontal (sem barra
+              visível) + "Filtrar por tag" fixo à direita (fora da rolagem, p/ o
+              dropdown não ser cortado). Não quebra mais em várias linhas. */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex flex-1 min-w-0 items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {([
               { key: 'all', label: 'Todos', icon: ClipboardCheck },
               { key: 'recent', label: 'Recentes', icon: Clock },
@@ -497,19 +500,20 @@ const AuditPage = ({ cards, sessions, initialStage, mode = 'all', embedded = fal
               const active = quickFilter === f.key;
               return (
                 <button key={f.key} onClick={() => setQuickFilter(f.key)}
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${active ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}>
-                  <f.icon className="h-3.5 w-3.5" />{f.label}
+                  className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-all ${active ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}>
+                  <f.icon className="h-3 w-3 shrink-0" />{f.label}
                 </button>
               );
             })}
+            </div>
 
-            {/* Multi-select de tags */}
+            {/* Multi-select de tags (fixo à direita, fora da rolagem) */}
             {uniqueTags.length > 0 && (
               <div className="relative shrink-0" ref={tagBoxRef}>
                 <button
                   onClick={() => setTagOpen(o => !o)}
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all ${tagFilter.length > 0 ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}>
-                  <Tag className="h-3.5 w-3.5" />
+                  className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-all ${tagFilter.length > 0 ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}>
+                  <Tag className="h-3 w-3 shrink-0" />
                   {tagFilter.length > 0 ? `${tagFilter.length} tag(s)` : 'Filtrar por tag'}
                   <ChevronDown className="h-3 w-3 opacity-70" />
                 </button>

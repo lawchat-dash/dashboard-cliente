@@ -8,7 +8,7 @@
 // Assim o "Relatório de Atualizações" (admin) sempre reflete o histórico.
 // ============================================================
 
-export const APP_VERSION = '1.00.2.1';
+export const APP_VERSION = '1.00.2.2';
 
 // Beta enquanto estamos lançando pros primeiros clientes.
 export const IS_BETA = true;
@@ -22,6 +22,14 @@ export interface ChangelogEntry {
 
 // Mais recente em CIMA.
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.00.2.2',
+    date: '2026-06-15',
+    title: 'Cabeçalho da Auditoria mais limpo',
+    changes: [
+      'No modo com a conversa aberta (coluna estreita) o topo da Auditoria não quebra mais: busca em largura total na própria linha e filtros rápidos em uma única linha com rolagem horizontal (sem barra), com "Filtrar por tag" fixo à direita.',
+    ],
+  },
   {
     version: '1.00.2.1',
     date: '2026-06-15',
