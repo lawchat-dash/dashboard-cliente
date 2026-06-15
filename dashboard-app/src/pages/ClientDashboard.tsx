@@ -10,9 +10,13 @@ const ClientDashboard = () => {
 
   if (loading) return <LoadingScreen />;
 
-  // Sem cliente cadastrado/ativo para este link → tela de acesso não liberado.
-  // NÃO mostra erro técnico nem vaza dado nenhum; apenas orienta a falar com o suporte.
-  if (!client) {
+  // Bloqueado quando: (a) o slug/company_id não está cadastrado ou cliente inativo
+  // (useClient já filtra active=true → vem null), OU (b) a feature "dashboard" foi
+  // DESLIGADA no admin. Nos dois casos: mesma tela de "Acesso não liberado", sem
+  // vazar dado nenhum. Desligar o dashboard também para o cron daquele cliente.
+  const dashboardLiberado = !!client && (client.features as any)?.dashboard !== false;
+
+  if (!client || !dashboardLiberado) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-card">

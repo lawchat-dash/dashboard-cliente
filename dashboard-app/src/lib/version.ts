@@ -8,7 +8,7 @@
 // Assim o "Relatório de Atualizações" (admin) sempre reflete o histórico.
 // ============================================================
 
-export const APP_VERSION = '1.00.0.0';
+export const APP_VERSION = '1.00.1.0';
 
 // Beta enquanto estamos lançando pros primeiros clientes.
 export const IS_BETA = true;
@@ -22,6 +22,14 @@ export interface ChangelogEntry {
 
 // Mais recente em CIMA.
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.00.1.0',
+    date: '2026-06-15',
+    title: 'Controle de acesso por cliente',
+    changes: [
+      'Desligar o "Dashboard" de um cliente no admin agora BLOQUEIA o acesso ao painel (mostra "Acesso não liberado") além de parar a sincronização daquele cliente.',
+    ],
+  },
   {
     version: '1.00.0.0',
     date: '2026-06-15',
