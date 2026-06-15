@@ -8,7 +8,7 @@
 // Assim o "Relatório de Atualizações" (admin) sempre reflete o histórico.
 // ============================================================
 
-export const APP_VERSION = '1.00.1.0';
+export const APP_VERSION = '1.00.2.0';
 
 // Beta enquanto estamos lançando pros primeiros clientes.
 export const IS_BETA = true;
@@ -22,6 +22,14 @@ export interface ChangelogEntry {
 
 // Mais recente em CIMA.
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.00.2.0',
+    date: '2026-06-15',
+    title: 'Sincronização escalonada (anti-sobrecarga)',
+    changes: [
+      'O cron horário deixou de disparar todos os clientes no minuto ":00" (rajada que sobrecarregava o servidor). Agora cada cliente sincroniza no seu próprio minuto dentro da hora, 1× por hora, com teto de concorrência — a carga fica distribuída ao longo da hora.',
+    ],
+  },
   {
     version: '1.00.1.0',
     date: '2026-06-15',

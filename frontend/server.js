@@ -2453,25 +2453,97 @@ async function safeRunCron(type) {
   }
 }
 
-// Tick a cada 30s: agendador AUTO-CURÁVEL baseado em chave de janela do relógio.
-// Diferente do antigo `getMinutes() === 0` (que pulava a hora inteira quando o
-// tick escorregava do minuto :00 sob carga), aqui comparamos a chave da janela
-// atual com a última rodada. Se um tick foi perdido, o próximo ainda vê uma
-// chave nova e roda → nunca fica horas sem sincronizar.
+// ============================================================
+// HORÁRIO ESCALONADO (anti-sobrecarga)
+// ------------------------------------------------------------
+// Em vez de disparar TODOS os clientes no minuto :00 (rajada que sobrecarrega o
+// server e o pool), cada cliente ganha um "minuto fixo" próprio dentro da hora
+// (derivado do id → estável). Ele roda 1× por hora NESSE minuto. Assim a carga
+// espalha pela hora inteira (ex.: cliente A às 13:10/14:10, B às 13:15/15:15…),
+// respeitando "no máx 1× por hora por cliente" e um teto de concorrência.
+// (Forçar manual em /api/cron/hourly/run-now continua rodando todos de uma vez.)
+// ============================================================
+const STAGGER_MAX_CONCURRENT = 4;          // teto de syncs simultâneos
+const clientHourlyDone = new Map();        // clientId → hourKey já sincronizado nesta hora
+let lastOnboardAt = 0;
+let staggerRunning = false;
+
+// Hash estável do id → minuto 0..59 (offset do cliente dentro da hora).
+function clientMinuteOffset(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 60;
+}
+
+async function runStaggeredHourly(now) {
+  if (staggerRunning) return;
+  staggerRunning = true;
+  try {
+    const hk = hourKey(now);
+    const minute = now.getMinutes();
+    let free = STAGGER_MAX_CONCURRENT - activeSyncs.size;
+    if (free <= 0) return; // já tem syncs ocupando o teto → tenta no próximo tick
+
+    // 1) Clientes "no ponto": offset <= minuto atual e ainda não rodaram nesta hora.
+    //    `>=` (não `===`) torna auto-curável: se um minuto foi perdido (tick lento/
+    //    restart), o cliente ainda roda mais tarde na mesma hora — sem rajada,
+    //    porque limitamos a `free` por tick (a cada 30s).
+    const r = await pool.query(
+      `SELECT id, name, helena_api_key, panel_ids
+         FROM helena_clientes_crm
+        WHERE active = TRUE AND first_sync_done = TRUE
+          AND COALESCE((features->>'dashboard')::boolean, true) = true`
+    );
+    const due = r.rows
+      .filter((c) => clientHourlyDone.get(c.id) !== hk && minute >= clientMinuteOffset(c.id))
+      .slice(0, free);
+    for (const c of due) {
+      clientHourlyDone.set(c.id, hk); // marca ANTES → não duplica
+      console.log(`  ⏱ hourly escalonado: ${c.name} (offset :${String(clientMinuteOffset(c.id)).padStart(2,"0")})`);
+      processOneClient(c, "hourly").catch((e) => console.error(`hourly ${c.name}:`, e.message));
+      free--;
+    }
+
+    // 2) Onboarding de clientes novos (sem 1º sync) — no máx 1 leva a cada 10 min, cap 2.
+    if (free > 0 && Date.now() - lastOnboardAt > 10 * 60 * 1000) {
+      const pend = await pool.query(
+        `SELECT id, name, helena_api_key, panel_ids
+           FROM helena_clientes_crm
+          WHERE active = TRUE AND first_sync_done = FALSE
+            AND COALESCE((features->>'dashboard')::boolean, true) = true
+            AND (sync_status IS NULL OR sync_status = 'idle')
+          ORDER BY created_at LIMIT 2`
+      );
+      if (pend.rows.length) {
+        lastOnboardAt = Date.now();
+        for (const nc of pend.rows.slice(0, free)) {
+          console.log(`  🆕 onboarding: ${nc.name}`);
+          processOneClient(nc, "nightly")
+            .then((res) => { if (res && res.status === "success") return pool.query("SELECT helena_mark_sync_complete($1::uuid, TRUE)", [nc.id]); })
+            .catch((e) => console.error(`onboarding ${nc.name}:`, e.message));
+        }
+      }
+    }
+  } catch (e) {
+    console.error("runStaggeredHourly:", e.message);
+  } finally {
+    staggerRunning = false;
+  }
+}
+
+// Tick a cada 30s.
 setInterval(() => {
   if (!cronState.booted) return; // não dispara nada antes do boot concluir
   const now = new Date();
-  const hk = hourKey(now);
   const dk = dayKey(now);
 
-  // Horário: 1x por hora-relógio (roda em até 30s do início de cada hora; e
-  // ~30s após o boot, garantindo dados frescos depois de qualquer restart).
-  if (cronState.hourlyEnabled && !cronState.hourlyRunning && cronState.lastHourlyKey !== hk) {
-    cronState.lastHourlyKey = hk; // marca ANTES do await → nunca duplica na mesma hora
-    safeRunCron("hourly").catch((e) => console.error("Cron hourly err:", e));
+  // Horário ESCALONADO: cada cliente no seu minuto, 1×/hora, com teto de concorrência.
+  if (cronState.hourlyEnabled) {
+    runStaggeredHourly(now).catch((e) => console.error("Cron hourly err:", e));
+    cronState.lastHourlyAt = new Date().toISOString();
   }
 
-  // Noturno: 1x por dia, a partir das 3h (modo full/all, mais pesado).
+  // Noturno: 1x por dia, a partir das 3h (modo full/all, mais pesado — roda todos).
   if (cronState.nightlyEnabled && !cronState.nightlyRunning && now.getHours() >= 3 && cronState.lastNightlyKey !== dk) {
     cronState.lastNightlyKey = dk;
     safeRunCron("nightly").catch((e) => console.error("Cron nightly err:", e));
@@ -2597,16 +2669,10 @@ async function boot() {
   server.listen(PORT);
   cronState.booted = true; // libera o tick do cron só agora
 
-  // Resync ÚNICO ~90s após o boot: garante dados frescos depois de qualquer
-  // deploy/restart sem competir com a subida (o dashboard lê do Supabase REST,
-  // não deste pool). Não duplica: safeRunCron tem guard (hourlyRunning) e o tick
-  // regular já considera a hora atual "feita". Roda 1x; a próxima é no fim da hora.
-  setTimeout(() => {
-    if (cronState.hourlyEnabled && !cronState.hourlyRunning) {
-      console.log("⏳ Resync pós-boot (hourly leve)...");
-      safeRunCron("hourly").catch((e) => console.error("Resync pós-boot err:", e));
-    }
-  }, 90_000);
+  // Não precisa mais de "resync pós-boot" em rajada: o agendador ESCALONADO já
+  // recupera a frescura depois de qualquer deploy/restart — cada cliente roda no
+  // seu minuto dentro da hora (offset <= minuto atual), limitado a STAGGER_MAX_CONCURRENT
+  // por tick. Sem pico no boot, sem competir com a subida.
 }
 
 boot().catch((e) => {
