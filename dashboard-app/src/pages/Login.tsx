@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { APP_VERSION, IS_BETA } from '@/lib/version';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -181,7 +182,7 @@ const Login = () => {
                 <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: C_DARK }} />
                 Sistema online
               </span>
-              <span>v2.0</span>
+              <span>v{APP_VERSION}{IS_BETA ? ' · beta' : ''}</span>
             </motion.div>
           </div>
         </div>

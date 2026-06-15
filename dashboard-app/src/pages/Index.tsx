@@ -25,7 +25,8 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import CampaignPage from '@/components/CampaignPage';
 import PipelinePage from '@/components/PipelinePage';
 import AuditPage from '@/components/AuditPage';
-import { FileDown, X } from 'lucide-react';
+import { FileDown, X, Sparkles } from 'lucide-react';
+import { APP_VERSION, IS_BETA } from '@/lib/version';
 import SalesAgentFAB from '@/components/SalesAgentFAB';
 import LiveChatPage from '@/components/LiveChatPage';
 import ContractsPage from '@/components/ContractsPage';
@@ -203,11 +204,20 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
           className="print:hidden flex items-center justify-between gap-4 pb-1"
         >
           <div>
-            <h1 className="flex items-center gap-2 text-2xl md:text-[26px] font-bold tracking-tight text-foreground">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl md:text-[26px] font-bold tracking-tight text-foreground">
               {greetText}, {displayName}! <span className="inline-block animate-[wiggle_2s_ease-in-out_infinite]">{greetEmoji}</span>
+              {IS_BETA && (
+                <span
+                  title={`Versão ${APP_VERSION} — em fase beta`}
+                  className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--kpi-amber))]/40 bg-[hsl(var(--kpi-amber))]/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[hsl(var(--kpi-amber))]"
+                >
+                  <Sparkles className="h-3 w-3" /> Beta
+                </span>
+              )}
             </h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Aqui está o desempenho de {filters.dateStart === filters.dateEnd ? 'hoje' : 'do período'}
+              <span className="ml-1.5 text-xs text-muted-foreground/60">· v{APP_VERSION}</span>
             </p>
           </div>
           <LastUpdatedBadge date={lastUpdated} onRefresh={handleRefresh} refreshing={refreshing} />

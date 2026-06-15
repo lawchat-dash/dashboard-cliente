@@ -7,6 +7,7 @@ import AdminOverview from '@/pages/AdminOverview';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminSettings from '@/pages/AdminSettings';
 import AdminSync from '@/pages/AdminSync';
+import AdminUpdates from '@/pages/AdminUpdates';
 import LoadingScreen from '@/components/LoadingScreen';
 import Index from '@/pages/Index';
 import { useClient } from '@/hooks/useClient';
@@ -45,6 +46,7 @@ const Admin = () => {
             <Route path="clients" element={<AdminClients />} />
             <Route path="dashboard/*" element={<AdminDashboard />} />
             <Route path="sync" element={<AdminSync />} />
+            <Route path="updates" element={<AdminUpdates />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="client/:slug/*" element={<ClientDashboardAdmin />} />
           </Routes>

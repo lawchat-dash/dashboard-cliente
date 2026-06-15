@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, LayoutDashboard, LogOut, PanelLeftOpen, PanelLeftClose, BarChart3, Settings, Sun, Moon, RefreshCw } from 'lucide-react';
+import { Users, LayoutDashboard, LogOut, PanelLeftOpen, PanelLeftClose, BarChart3, Settings, Sun, Moon, RefreshCw, History } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { APP_VERSION } from '@/lib/version';
 
 const navItems = [
   { title: 'Resumo',         url: '/admin',           icon: BarChart3,       exact: true },
   { title: 'Clientes',       url: '/admin/clients',   icon: Users },
   { title: 'Dashboard',      url: '/admin/dashboard', icon: LayoutDashboard },
   { title: 'Sincronização',  url: '/admin/sync',      icon: RefreshCw },
+  { title: 'Atualizações',   url: '/admin/updates',   icon: History },
   { title: 'Configurações',  url: '/admin/settings',  icon: Settings },
 ];
 
@@ -148,6 +150,9 @@ const AdminSidebar = () => {
           </div>
           {!collapsed && <span className="font-medium">Sair</span>}
         </button>
+        {!collapsed && (
+          <p className="px-2 pt-1 text-center text-[10px] text-muted-foreground/60">v{APP_VERSION} · beta</p>
+        )}
       </div>
     </aside>
   );
