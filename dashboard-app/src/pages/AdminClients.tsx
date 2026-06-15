@@ -71,6 +71,7 @@ const AdminClients = () => {
     split_screen: false,
   };
   const [features, setFeatures] = useState<ClientFeatures>({ ...DEFAULT_FEATURES });
+  const [active, setActive] = useState(true); // cliente ativo? desligado = bloqueia acesso + para o cron
   const [allowedNumbers, setAllowedNumbers] = useState<string[]>([]);
   const [availableNumbers, setAvailableNumbers] = useState<string[]>([]);
   const [loadingNumbers, setLoadingNumbers] = useState(false);
@@ -130,6 +131,7 @@ const AdminClients = () => {
     setEditing(null); setName(''); setSlug(''); setHelenaCompanyId(''); setApiKey(''); setClientLevel(1);
     setPanels([{ panel_id: '', panel_name: '', sync_interval_minutes: 10 }]);
     setStepMappings([]); setFeatures({ ...DEFAULT_FEATURES });
+    setActive(true);
     setAllowedNumbers([]); setAvailableNumbers([]);
     setDialogOpen(true);
   };
@@ -141,6 +143,7 @@ const AdminClients = () => {
     // Merge: garante que TODA feature tenha valor definido (as que faltam no banco
     // herdam o default), pra o switch refletir o comportamento real da rota.
     setFeatures({ ...DEFAULT_FEATURES, ...(client.features || {}) });
+    setActive(client.active !== false);
     setAllowedNumbers(client.allowed_numbers || []);
     setAvailableNumbers([]);
     const { data } = await supabase.from('client_panels').select('*').eq('client_id', client.id);
@@ -231,12 +234,12 @@ const AdminClients = () => {
     try {
       let clientId: string;
       if (editing) {
-        const { error } = await supabase.from('clients').update({ name, slug: autoSlug, helena_company_id: helenaCompanyId, helena_api_key: apiKey, features: features as any, client_level: clientLevel, allowed_numbers: allowedNumbers } as any).eq('id', editing.id);
+        const { error } = await supabase.from('clients').update({ name, slug: autoSlug, helena_company_id: helenaCompanyId, helena_api_key: apiKey, features: features as any, client_level: clientLevel, allowed_numbers: allowedNumbers, active } as any).eq('id', editing.id);
         if (error) throw error;
         clientId = editing.id;
         await supabase.from('client_panels').delete().eq('client_id', clientId);
       } else {
-        const { data, error } = await supabase.from('clients').insert({ name, slug: autoSlug, helena_company_id: helenaCompanyId, helena_api_key: apiKey, features: features as any, client_level: clientLevel, allowed_numbers: allowedNumbers } as any).select().single();
+        const { data, error } = await supabase.from('clients').insert({ name, slug: autoSlug, helena_company_id: helenaCompanyId, helena_api_key: apiKey, features: features as any, client_level: clientLevel, allowed_numbers: allowedNumbers, active } as any).select().single();
         if (error) throw error;
         clientId = data.id;
       }
@@ -494,6 +497,21 @@ const AdminClients = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Ativar / Desativar cliente — switch mestre */}
+            <div className={`flex items-center justify-between gap-3 rounded-lg border p-3 ${active ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/40 bg-red-500/5'}`}>
+              <div>
+                <Label htmlFor="cliente-ativo" className="text-sm font-semibold">
+                  {active ? '🟢 Cliente ativo' : '🔴 Cliente desativado'}
+                </Label>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {active
+                    ? 'O painel está liberado e a sincronização roda normalmente.'
+                    : 'Bloqueia o acesso ao painel (mostra "Acesso não liberado") e PARA a sincronização deste cliente.'}
+                </p>
+              </div>
+              <Switch id="cliente-ativo" checked={active} onCheckedChange={setActive} />
             </div>
 
             {/* Feature toggles */}
