@@ -16,6 +16,7 @@ export interface ClientFeatures {
   notificacoes?: boolean;
   supervisao?: boolean;
   split_screen?: boolean;
+  meta_vendas?: number; // meta de vendas FIXA por cliente (contratos/mês)
 }
 
 export interface Client {

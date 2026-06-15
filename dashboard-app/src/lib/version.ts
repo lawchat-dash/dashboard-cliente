@@ -8,7 +8,7 @@
 // Assim o "Relatório de Atualizações" (admin) sempre reflete o histórico.
 // ============================================================
 
-export const APP_VERSION = '1.00.2.2';
+export const APP_VERSION = '1.00.2.3';
 
 // Beta enquanto estamos lançando pros primeiros clientes.
 export const IS_BETA = true;
@@ -22,6 +22,14 @@ export interface ChangelogEntry {
 
 // Mais recente em CIMA.
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.00.2.3',
+    date: '2026-06-15',
+    title: 'Meta de vendas fixa por cliente',
+    changes: [
+      'A "Meta de Vendas" agora é salva por company_id no banco (não mais no navegador): continua editável no dashboard, mas fica consistente em qualquer navegador e não reseta mais a cada mês.',
+    ],
+  },
   {
     version: '1.00.2.2',
     date: '2026-06-15',

@@ -5,41 +5,54 @@ import { useClassify } from '@/contexts/StepMappingsContext';
 import { motion } from 'framer-motion';
 import { Target, Pencil, Check, Info, TrendingUp, CalendarDays, Clock, Sparkles, Flag } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+const DEFAULT_GOAL = 20;
 
 interface SalesGoalProps {
   cards: CardType[];
+  // Meta FIXA por cliente (company_id): persiste no banco em features.meta_vendas,
+  // não mais no localStorage do navegador. Editável aqui, mas salva por cliente.
+  clientId?: string;
+  features?: Record<string, any>;
 }
 
-function getMonthKey() {
-  const now = new Date();
-  return `sales-goal-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-function getPrevMonthKey() {
-  const now = new Date();
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  return `sales-goal-${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
-}
-function loadGoal(): number {
-  const stored = localStorage.getItem(getMonthKey());
-  if (stored) return parseInt(stored, 10);
-  const prev = localStorage.getItem(getPrevMonthKey());
-  return prev ? parseInt(prev, 10) : 20;
-}
-
-const SalesGoal = ({ cards }: SalesGoalProps) => {
+const SalesGoal = ({ cards, clientId, features }: SalesGoalProps) => {
   const { classify } = useClassify();
-  const [goal, setGoal] = useState(loadGoal);
+  const savedGoal = Number(features?.meta_vendas) > 0 ? Number(features?.meta_vendas) : DEFAULT_GOAL;
+  const [goal, setGoal] = useState(savedGoal);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(goal));
+  const [draft, setDraft] = useState(String(savedGoal));
+  const [savingGoal, setSavingGoal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Reflete a meta vinda do banco SÓ quando ela realmente muda (ex.: recarregou /
+  // outro usuário alterou). Não dispara ao salvar (o features prop fica defasado e
+  // reverteria pro valor antigo). Mantém o valor recém-salvo localmente.
+  useEffect(() => { setGoal(savedGoal); }, [savedGoal]);
   useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const val = Math.max(1, parseInt(draft, 10) || 1);
     setGoal(val);
-    localStorage.setItem(getMonthKey(), String(val));
     setEditing(false);
+    // Persiste por company_id (no banco). Se não tiver clientId, só local na sessão.
+    if (clientId) {
+      setSavingGoal(true);
+      try {
+        const { error } = await supabase
+          .from('clients')
+          .update({ features: { ...(features || {}), meta_vendas: val } } as any)
+          .eq('id', clientId);
+        if (error) throw error;
+        toast.success('Meta de vendas salva');
+      } catch (e: any) {
+        toast.error('Não foi possível salvar a meta');
+      } finally {
+        setSavingGoal(false);
+      }
+    }
   };
 
   const m = useMemo(() => {

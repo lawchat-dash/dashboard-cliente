@@ -154,7 +154,7 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
             </div>
             <div className="grid items-stretch gap-5 lg:grid-cols-2">
               <AverageTimeCards cards={filteredCards} />
-              <SalesGoal cards={filteredCards} />
+              <SalesGoal cards={filteredCards} clientId={clientId} features={features as any} />
             </div>
             <ChatEvolutionPage cards={filteredCards} sessions={sessions} />
             <div className="grid items-start gap-5 lg:grid-cols-2">
@@ -264,7 +264,7 @@ const Index = ({ clientId, clientName, features, basePath = '', embedded = false
               </div>
               <div className="grid items-stretch gap-5 lg:grid-cols-2">
                 <AverageTimeCards cards={filteredCards} />
-                <SalesGoal cards={filteredCards} />
+                <SalesGoal cards={filteredCards} clientId={clientId} features={features as any} />
               </div>
               <ChatEvolutionPage cards={filteredCards} sessions={sessions} />
               <div className="grid items-start gap-5 lg:grid-cols-2">
