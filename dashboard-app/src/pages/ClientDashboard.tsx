@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { ShieldAlert, Mail } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { useClient } from '@/hooks/useClient';
 import Index from '@/pages/Index';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -29,13 +29,7 @@ const ClientDashboard = () => {
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Seu painel ainda não está disponível. Entre em contato com o suporte para liberar o acesso a este dashboard.
           </p>
-          <a
-            href="mailto:contatolawchat@gmail.com?subject=Liberação%20de%20acesso%20ao%20Dashboard"
-            className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Mail className="h-4 w-4" /> Falar com o suporte
-          </a>
-          <p className="mt-4 text-xs text-muted-foreground/70">LawChat — Dashboard Comercial</p>
+          <p className="mt-6 text-xs text-muted-foreground/70">LawChat — Dashboard Comercial</p>
         </div>
       </div>
     );
